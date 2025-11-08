@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>OS #10626</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    *{box-sizing:border-box} html,body{margin:0;padding:0}
+    body{
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+      background:#f6f7fb; color:#0f172a;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    }
+    .wrap{ max-width:860px; margin:18px auto; padding:16px; }
+    .modal{
+      background:#fff; border:1px solid #e7ecf4; border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.06);
+      padding:22px 22px 18px;
+    }
+    .badge{
+      display:inline-block; padding:6px 12px; border-radius:12px;
+      background:#e9f0ff; color:#2c4de2; font-weight:700; font-size:14px;
+      margin:0 auto 8px; border:1px solid #d8e2ff;
+    }
+    h1{ font-size:28px; font-weight:800; text-align:center; margin:4px 0 4px; }
+    .sub{ text-align:center; font-size:14px; color:#475569; line-height:1.4; margin-bottom:14px; }
+    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+    .grid-2x{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    .lbl{ font-size:13px; color:#334155; }
+    .val{
+      border:1px solid #e7ecf4; background:#f8fafc; padding:11px 12px;
+      border-radius:10px; font-size:14px; color:#0f172a; min-height:40px;
+    }
+    .blkTitle{ font-weight:700; font-size:16px; margin:14px 0 10px; color:#0f172a; }
+    .warn{ margin-top:14px; text-align:center; color:#b91c1c; font-weight:700; font-size:14px; }
+    .notice{ margin-top:8px; color:#64748b; font-size:12px; text-align:center; line-height:1.45; }
+    .money{
+      margin-top:12px; padding-top:10px; border-top:1px dashed #e5e7eb;
+      display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:14px; color:#0f172a;
+    }
+    .total{ margin-top:6px; font-weight:800; text-align:center; font-size:18px; }
+    .assin{ margin-top:18px; text-align:center; color:#0f172a; }
+    .assin::before{ content:""; display:block; border-top:1px solid #94a3b8; margin:22px auto 6px; width:68%; }
+    .assin small{ color:#64748b; font-size:12px }
+    @media print {
+      body{background:#fff}
+      .wrap{margin:0; padding:0; max-width:none}
+      .modal{border:none; border-radius:0; box-shadow:none; padding:8mm 10mm}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="modal">
+      <div style="text-align:center">
+        <span class="badge">Ordem Nº 10626 _____</span>
+      </div>
+      <h1>Ordem de Serviço</h1>
+      <div class="sub">
+        Fica neste ato o cliente responsável civil e criminalmente pela procedência do aparelho.<br>
+        Não nos responsabilizamos por cartões ou chips deixados no aparelho.
+      </div>
+
+      <!-- Cliente -->
+      <div class="blkTitle">Cliente</div>
+      <div class="grid-3">
+        <div class="field">
+          <div class="lbl">Nome:</div>
+          <div class="val">Beatriz Souza</div>
+        </div>
+        <div class="field">
+          <div class="lbl">Telefone:</div>
+          <div class="val">(12) 98123-0008</div>
+        </div>
+        <div class="field">
+          <div class="lbl">CPF:</div>
+          <div class="val">89012345678</div>
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top:12px">
+        <div class="field"><div class="lbl">CEP:</div><div class="val">12500-008</div></div>
+        <div class="field"><div class="lbl">Logradouro:</div><div class="val">Rua Bahia</div></div>
+        <div class="field"><div class="lbl">Número:</div><div class="val">77</div></div>
+      </div>
+
+      <div class="grid-3" style="margin-top:12px">
+        <div class="field"><div class="lbl">Bairro:</div><div class="val">Vila Paraíba</div></div>
+        <div class="field"><div class="lbl">Cidade:</div><div class="val">Guaratinguetá</div></div>
+        <div class="field"><div class="lbl">UF:</div><div class="val">SP</div></div>
+      </div>
+
+            <div class="grid-1" style="margin-top:12px">
+        <div class="field">
+          <div class="lbl">Endereço (completo):</div>
+          <div class="val">Rua Bahia, 77 — Vila Paraíba — Guaratinguetá/SP — CEP 12500-008</div>
+        </div>
+      </div>
+      
+      <!-- Ordem -->
+      <div class="blkTitle">Ordem</div>
+      <div class="grid-2x">
+        <div class="field"><div class="lbl">Data de entrada:</div><div class="val">01/11/2025</div></div>
+        <div class="field"><div class="lbl">Hora de entrada:</div><div class="val">10:58:00</div></div>
+      </div>
+
+      <div class="grid-2x" style="margin-top:12px">
+        <div class="field"><div class="lbl">Modelo do aparelho:</div><div class="val">12</div></div>
+        <div class="field"><div class="lbl">Serviço prestado:</div><div class="val">12</div></div>
+      </div>
+
+      <div class="grid-2x" style="margin-top:12px">
+        <div class="field"><div class="lbl">Status:</div><div class="val">em_andamento</div></div>
+        <div class="field"><div class="lbl">Senha (padrão / escrita):</div><div class="val">—</div></div>
+      </div>
+
+      <div class="field" style="margin-top:12px">
+        <div class="lbl">Observações:</div>
+        <div class="val" style="min-height:70px"></div>
+      </div>
+
+      <!-- Valores -->
+      <div class="money">
+        <div>🟢 Pix: <strong>R$ 0,00</strong></div>
+        <div>💵 Dinheiro: <strong>R$ 0,00</strong></div>
+        <div>💳 Crédito: <strong>R$ 0,00</strong></div>
+        <div>💳 Débito: <strong>R$ 0,00</strong></div>
+      </div>
+      <div class="money" style="margin-top:6px">
+        <div>🧮 Dinheiro/Pix (misto): <strong>R$ 0,00</strong></div>
+        <div>💳 Cartão (Crédito+Débito): <strong>R$ 0,00</strong></div>
+      </div>
+      <div class="total">Total: R$ 0,00</div>
+
+      <div class="warn">Aparelho só será liberado mediante apresentação desta ordem de serviço.</div>
+      <div class="notice">
+        Caso o aparelho não seja retirado em até 30 (trinta) dias após a conclusão do serviço, será cobrada multa
+        de 1% (um por cento) ao dia sobre o valor total do serviço, conforme o Artigo 408 do Código Civil Brasileiro,
+        que prevê a incidência de penalidade em caso de descumprimento de obrigação por parte do devedor.
+      </div>
+
+      <div class="assin"><small>Assinatura do cliente</small></div>
+    </div>
+  </div>
+
+</body>
+</html>

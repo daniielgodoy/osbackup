@@ -1,0 +1,149 @@
+/* ===== Aplique compat só no DARK ===== */
+
+/* NAVBAR */
+:root[data-theme="dark"] body .navbar {
+  background: #121417 !important;
+  color: #e0e0e0 !important;
+  border-bottom: 1px solid #24282e !important;
+  box-shadow: none !important;
+}
+:root[data-theme="dark"] body .navbar a,
+:root[data-theme="dark"] body .navbar .nav-center a,
+:root[data-theme="dark"] body .navbar .brand,
+:root[data-theme="dark"] body .navbar .icon-btn {
+  color: color-mix(in srgb, #e0e0e0 85%, transparent) !important;
+  border-color: #2a3038 !important;
+}
+:root[data-theme="dark"] body .navbar a:hover,
+:root[data-theme="dark"] body .navbar .nav-center li:hover > a {
+  color: #4db3ff !important;
+}
+:root[data-theme="dark"] body .navbar .nav-center li.active > a {
+  color: #4db3ff !important;
+  font-weight: 600 !important;
+}
+:root[data-theme="dark"] body .navbar .nav-center li.active::after {
+  background: linear-gradient(90deg, #79a9ff, #5ec3ff) !important;
+}
+
+/* CARDS / LIST / KITS */
+:root[data-theme="dark"] body .card {
+  background: linear-gradient(180deg, #262b35 0%, #1f232b 100%) !important;
+  border: 1px solid #2e343d !important;
+  color: #e0e0e0 !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.35) !important;
+}
+:root[data-theme="dark"] body .kit,
+:root[data-theme="dark"] body .list {
+  background: #1f2329 !important;
+  border: 1px solid #2e343d !important;
+}
+:root[data-theme="dark"] body .list.small .row,
+:root[data-theme="dark"] body .list.compact .row {
+  background: #20242b !important;
+  border: 1px solid #2a313a !important;
+  border-radius: 8px !important;
+}
+
+/* BOTÕES */
+:root[data-theme="dark"] body .btn {
+  background: #2b3038 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #2e343d !important;
+  box-shadow: none !important;
+}
+:root[data-theme="dark"] body .btn.primary {
+  background: linear-gradient(180deg, #2c7db8 0%, #1e547a 100%) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.14) !important;
+  box-shadow: 0 6px 24px rgba(77,179,255,.18) !important;
+}
+:root[data-theme="dark"] body .btn.outline {
+  background: transparent !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #2e343d !important;
+}
+:root[data-theme="dark"] body .btn.danger {
+  background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.14) !important;
+}
+
+/* INPUTS */
+:root[data-theme="dark"] body input[type="text"],
+:root[data-theme="dark"] body input[type="email"],
+:root[data-theme="dark"] body input[type="tel"],
+:root[data-theme="dark"] body input[type="password"],
+:root[data-theme="dark"] body input[type="number"],
+:root[data-theme="dark"] body input[type="search"],
+:root[data-theme="dark"] body select,
+:root[data-theme="dark"] body textarea {
+  background: #11161d !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #2b3340 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+:root[data-theme="dark"] body input:focus,
+:root[data-theme="dark"] body select:focus,
+:root[data-theme="dark"] body textarea:focus {
+  border-color: rgba(77,179,255,.65) !important;
+  box-shadow: 0 0 0 3px rgba(77,179,255,.18) !important;
+  background: #0f141b !important;
+}
+
+/* CONFIG HEADER / FUNDOS */
+:root[data-theme="dark"] body .config-page,
+:root[data-theme="dark"] body .config-grid,
+:root[data-theme="dark"] body .main-column,
+:root[data-theme="dark"] body .side-column {
+  background: #1b1f25 !important;
+  color: #e0e0e0 !important;
+}
+:root[data-theme="dark"] body .config-header {
+  background: #1b1f25 !important;
+  border-bottom: 1px solid #2e343d !important;
+}
+
+/* TABELAS */
+:root[data-theme="dark"] body table,
+:root[data-theme="dark"] body .table {
+  background: #232832 !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #2e343d !important;
+}
+:root[data-theme="dark"] body table th,
+:root[data-theme="dark"] body .table th {
+  background: #1f2329 !important;
+  color: #aeb7c1 !important;
+  border-bottom: 1px solid #2e343d !important;
+}
+:root[data-theme="dark"] body table tr:nth-child(odd) td,
+:root[data-theme="dark"] body .table tr:nth-child(odd) td {
+  background: rgba(255,255,255,.03) !important;
+}
+
+/* PILLS */
+:root[data-theme="dark"] body .pill,
+:root[data-theme="dark"] body .tag,
+:root[data-theme="dark"] body .badge {
+  background: #2e343d !important;
+  color: #e0e0e0 !important;
+  border: 1px solid #2e343d !important;
+}
+:root[data-theme="dark"] body .pill.ok  { background:#2ecc71 !important; color:#0a1f12 !important; }
+:root[data-theme="dark"] body .pill.warn{ background:#e67e22 !important; }
+:root[data-theme="dark"] body .pill.bad { background:#e74c3c !important; }
+
+/* WHATSAPP QR BOX */
+:root[data-theme="dark"] body .wa-qr-box{
+  border:1px dashed #2e343d !important;
+  background:#1f2329 !important;
+}
+:root[data-theme="dark"] body .wa-qr-wrap{
+  background: rgba(255,255,255,0.02) !important;
+}
+
+/* SCROLLBAR dark */
+:root[data-theme="dark"] body *::-webkit-scrollbar-thumb { background:#4a5363 !important; }
+:root[data-theme="dark"] body *::-webkit-scrollbar-track { background:#2a303a !important; }

@@ -1,0 +1,766 @@
+/* ===== BASE ===== */
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background-color: #1b1f25;
+  color: #e0e0e0;
+    padding-top: var(--navbar-height); /* ou calc(var(--navbar-height) + 8px) se quiser um respiro */
+
+}
+.content {
+  /* garante que nunca fique sob a navbar */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--navbar-height));
+}
+
+/* ===== HEADER DO DASHBOARD ===== */
+.dashboard-header {
+  margin-bottom: 25px;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* ===== GRID PRINCIPAL ===== */
+.grid-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+  align-items: stretch; /* força ambas as colunas a ocupar altura total */
+}
+
+.main-column,
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  height: 100%;
+}
+.side-column > * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* ===== CARDS DE STATUS ===== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  position: relative;
+  background-color: #232832;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.card h4 {
+  font-size: 0.9rem;
+  color: #ccc;
+  margin-bottom: 6px;
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 1.9rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.card p {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.card .icon {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  font-size: 2rem;
+  opacity: 0.15;
+}
+
+/* ===== CORES DOS CARDS ===== */
+.card.blue   { border-left: 4px solid #4db3ff; }
+.card.green  { border-left: 4px solid #2CFF05; }
+.card.orange { border-left: 4px solid #FF5C00; }
+.card.cyan   { border-left: 4px solid #00FFFF; }
+.card.yellow    { border-left: 4px solid #FFFF00; }
+.card.white    { border-left: 4px solid #ffffff; }
+
+/* ===== GRÁFICOS ===== */
+
+.chart-box h3 {
+  color: #fff;
+  font-size: 1rem;
+  margin-bottom: 15px;
+}
+
+/* O box do gráfico participa do layout e estica junto com a coluna */
+.chart-box {
+  background-color: #232832;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+/* IMPORTANTE: .full-width volta a esticar para alinhar com a coluna lateral */
+.full-width {
+  flex: 1 1 auto;           /* ocupa o restante da coluna principal */
+  width: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* O canvas ocupa o espaço disponível, sem forçar 100% de height */
+.full-width canvas {
+  flex: 1 1 auto;
+  width: 100% !important;
+  min-height: 220px;         /* dá uma base agradável */
+  max-height: 500px;         /* evita “esticar infinito” em telas enormes */
+  display: block;
+}
+
+
+
+/* ===== CARD DE SERVIÇOS ===== */
+.servicos-card {
+  background-color: #232832;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.servicos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.servicos-header h3 {
+  color: #fff;
+  font-size: 1rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+/* ===== BOTÃO ADICIONAR SERVIÇO ===== */
+.add-servico-btn {
+  background-color: #4db3ff;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.add-servico-btn:hover {
+  background-color: #68c6ff;
+  transform: translateY(-2px);
+}
+
+.add-servico-btn i {
+  pointer-events: none;
+}
+
+/* ===== CARD FINANCEIRO (estilo igual aos outros títulos com ícone) ===== */
+.card.financeiro {
+  background-color: #232832;
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: default;
+  transition: none;
+  border-left: none;
+}
+
+.card.financeiro:hover {
+  transform: none;
+}
+
+/* Ícone + texto no título */
+.card.financeiro h4 {
+  font-size: 1rem;
+  color: #ffffff;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card.financeiro h4 i {
+  font-size: 1rem;
+  color: #ffffff; /* mesmo tom dos outros ícones */
+  opacity: 1;
+}
+
+/* Valor principal */
+.card.financeiro h2 {
+  margin: 0;
+  font-size: 3.4rem; /* antes 2.8rem */
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  text-align: left;
+}
+
+
+/* Subtexto */
+.card.financeiro p {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #aaa;
+  text-align: left;
+}
+
+/* Animação quando atualizar */
+.card.financeiro h2.flash {
+  animation: flashFinanceiro 0.4s;
+}
+
+@keyframes flashFinanceiro {
+  0% { color: #fff; transform: scale(1); }
+  50% { color: #add8ec; transform: scale(1.15); }
+  100% { color: #fff; transform: scale(1); }
+}
+.sub-valores {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  gap: 16px;
+}
+
+.sub-valores .campo {
+  display: flex;
+  flex-direction: column;
+  background-color: #1c2026;
+  border-radius: 8px;
+  padding: 14px 16px;
+  flex: 1;
+  text-align: left;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.45);
+  border: 1px solid #2e343d;
+}
+
+.sub-valores .label {
+  font-size: 1.1rem;
+  color: #cfcfcf;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sub-valores span:last-child {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+/* Animação ao atualizar */
+.sub-valores span:last-child.flash {
+  animation: flashFinanceiroSub 0.4s;
+}
+
+@keyframes flashFinanceiroSub {
+  0% { color: #fff; transform: scale(1); }
+  50% { color: #add8ec; transform: scale(1.1); }
+  100% { color: #fff; transform: scale(1); }
+}
+
+/* Cabeçalho da listagem */
+.servicos-header-list {
+  display: grid;
+  grid-template-columns: 40px 100px 100px 1fr 75px 120px; /* layout fixo e menor */
+  align-items: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: #c9c9c9;
+  padding: 5px 10px 5px 14px;
+  border-bottom: 1px solid #2e343d;
+  background: #252a31;
+  border-radius: 6px 6px 0 0;
+}
+
+/* Lista geral */
+.lista-servicos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Cada linha */
+.lista-servicos li {
+  display: grid;
+  grid-template-columns: 40px 100px 100px 1fr 75px 120px;
+  align-items: center;
+  background: #1f2329;
+  border: 1px solid #2e343d;
+  border-radius: 6px;
+  padding: 5px 10px 5px 14px;
+  font-size: 12px;
+  color: #eaeaea;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 30px;
+}
+
+/* Faixa lateral colorida */
+.lista-servicos li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  border-radius: 6px 0 0 6px;
+}
+
+/* Cores por status */
+.status-pendente::before { background: #FFFF00; }        /* Laranja */
+.status-andamento::before { background: #FF5C00; }       /* Azul */
+.status-concluido::before { background: #ffffff; }       /* Verde */
+.status-cancelado::before { background: #F72119; }       /* Vermelho */
+.status-retirada::before { background: #2CFF05; }        /* Roxo */
+.status-orcamento::before { background: #00FFFF; }        /* Roxo */
+.status-desconhecido::before { background: #777; }       /* Cinza */
+
+
+/* Hover */
+.lista-servicos li:hover {
+  background: #2a2f36;
+  transform: translateY(-1px);
+}
+
+/* Colunas */
+.os-id, .col-id {
+  width: 40px;
+  color: #69a7ff;
+  font-weight: 600;
+}
+.os-nome, .col-nome {
+  width: 100px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-modelo, .col-modelo {
+  width: 100px;
+  color: #d9d9d9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-servico, .col-servico {
+  flex: 1;
+  color: #b0b0b0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.os-data, .col-data {
+  width: 75px;
+  text-align: left;
+  justify-self: end;
+  font-size: 11px;
+  color: #bbb;
+  padding-right: 2px;
+}
+
+/* Combobox de status (versão menor e alinhada) */
+.status-select {
+  border: 1px solid #2e343d;
+  background: #2a2f36;
+  color: #eaeaea;
+  border-radius: 5px;
+  padding: 2px 4px;
+  font-size: 11px;
+  outline: none;
+  cursor: pointer;
+  height: 20px;
+  width: 95px;          /* largura reduzida */
+  transition: 0.2s;
+}
+
+.status-select:hover {
+  border-color: #3f4650;
+  background: #32373f;
+}
+
+
+
+/* Feedback de atualização */
+.flash-success { background: #4caf50 !important; color: #fff !important; }
+.flash-error { background: #f44336 !important; color: #fff !important; }
+.card h2.flash {
+  animation: flashUpdate 0.4s;
+}
+
+@keyframes flashUpdate {
+  0% { color: #fff; transform: scale(1); }
+  50% { color: #add8ec; transform: scale(1.15); }
+  100% { color: #fff; transform: scale(1); }
+}
+/* 👉 Garante 2 colunas em .charts-four mesmo com .full-width */
+.charts-four.full-width{
+  display: grid !important;                     /* prevalece sobre .full-width (flex) */
+  grid-template-columns: repeat(2, minmax(230px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  grid-auto-rows: minmax(160px, auto);
+  width: 100%;
+}
+
+/* 👉 Anula qualquer altura fixa global no .chart-box */
+.charts-four .chart-box{
+  height: auto !important;                      /* evita ficar gigante/empilhar */
+  padding: 10px 12px;
+  min-height: 160px;
+}
+
+/* Título e canvas mais compactos */
+.charts-four .chart-box h3{
+  font-size: .9rem;
+  margin: 0 0 4px;
+}
+.charts-four .chart-box canvas{
+  min-height: 120px;
+  max-height: 170px;
+}
+
+/* Responsivo */
+@media (max-width: 800px){
+  .charts-four.full-width{
+    grid-template-columns: 1fr !important;
+    grid-auto-rows: minmax(150px, auto);
+  }
+  .charts-four .chart-box canvas{
+    min-height: 110px;
+    max-height: 160px;
+  }
+}
+/* 🔎 Aumenta levemente as caixas e o canvas dos 4 donuts */
+/* incremento sutil no tamanho dos 4 donuts */
+.charts-four.full-width{
+  grid-auto-rows: minmax(202px, auto);  /* antes 194px */
+  gap: 16px;                             /* +1px de respiro */
+}
+
+.charts-four .chart-box{
+  padding: 15px 18px;                    /* +2px de padding */
+  min-height: 202px;                     /* antes 194px */
+}
+
+.charts-four .chart-box h3{
+  font-size: 1.05rem;                    /* +3% no título */
+  margin: 0 0 7px;
+}
+
+.charts-four .chart-box canvas{
+  min-height: 162px;                     /* antes 154px */
+  max-height: 212px;                     /* antes 204px */
+}
+
+/* mobile: ajusta um pouquinho também */
+@media (max-width: 800px){
+  .charts-four.full-width{
+    grid-auto-rows: minmax(182px, auto); /* antes 176px */
+  }
+  .charts-four .chart-box canvas{
+    min-height: 142px;                   /* antes 136px */
+    max-height: 192px;                   /* antes 186px */
+  }
+}
+/* Resumo Financeiro: 2 colunas (2 em cima + 2 embaixo) */
+.card.financeiro .sub-valores{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+/* Caixinhas iguais e alinhadas */
+.card.financeiro .sub-valores .campo{
+  display: flex;
+  flex-direction: column;
+  background-color: #1c2026;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 8px rgba(0,0,0,.45);
+  border: 1px solid #2e343d;
+  min-height: 92px; /* garante mesma altura visual */
+}
+
+.card.financeiro .sub-valores .label{
+  font-size: 1rem;
+  color: #cfcfcf;
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.card.financeiro .sub-valores span:last-child{
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+/* Mobile: 1 por linha */
+@media (max-width: 640px){
+  .card.financeiro .sub-valores{
+    grid-template-columns: 1fr;
+  }
+}
+.auto-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #111419; /* 🔹 fundo bem escuro */
+  border: 1px solid #1f2329;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 9999;
+}
+
+.auto-item {
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #e0e3e8; /* 🔹 texto principal mais claro */
+  transition: background 0.15s, color 0.15s;
+}
+
+.auto-item:hover {
+  background: #232832; /* 🔹 destaque ao passar o mouse */
+  color: #ffffff;
+}
+
+.auto-muted {
+  opacity: 0.65;
+  font-size: 0.9em;
+  color: #a0a7b2; /* 🔹 cinza frio e legível */
+}
+.auto-item:hover {
+  background: #232832;
+  color: #fff;
+  box-shadow: inset 0 0 10px rgba(77, 179, 255, 0.15);
+}
+/* Cabeçalho da listagem */
+.servicos-header-list{
+  display:grid;
+  grid-template-columns: 60px 1.2fr 1fr 1.4fr 120px; /* OS | Nome | Modelo | Serviço | Status */
+  align-items:center;
+  font-weight:600;
+  font-size:12px;
+  color:#c9c9c9;
+  padding:5px 10px 5px 14px;
+  border-bottom:1px solid #2e343d;
+  background:#252a31;
+  border-radius:6px 6px 0 0;
+}
+
+/* Cada linha */
+.lista-servicos li{
+  display:grid;
+  grid-template-columns: 60px 1.2fr 1fr 1.4fr 120px; /* mesma grade do header */
+  align-items:center;
+  background:#1f2329;
+  border:1px solid #2e343d;
+  border-radius:6px;
+  padding:5px 10px 5px 14px;
+  font-size:12px;
+  color:#eaeaea;
+  transition:all .2s ease;
+  position:relative;
+  overflow:hidden;
+  min-height:30px;
+}
+
+/* Colunas (ajustes finos) */
+.os-id,.col-id{ color:#69a7ff;font-weight:600 }
+.os-nome,.col-nome,
+.os-modelo,.col-modelo,
+.os-servico,.col-servico{
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* Combobox de status alinhado à direita */
+.col-status{ text-align:left; }
+.status-select{
+  border:1px solid #2e343d;
+  background:#2a2f36;
+  color:#eaeaea;
+  border-radius:5px;
+  padding:2px 6px;
+  font-size:11px;
+  outline:none;
+  cursor:pointer;
+  height:24px;
+  width:110px;      /* levemente maior */
+  transition:.2s;
+  justify-self:end; /* cola à direita da coluna */
+}
+.status-select:hover{ border-color:#3f4650;background:#32373f; }
+/* === LIGHT THEME === */
+html[data-theme="light"] body{
+  background-color:#f3f5f9; color:#0f172a;
+}
+html[data-theme="light"] .card,
+html[data-theme="light"] .chart-box,
+html[data-theme="light"] .servicos-card,
+html[data-theme="light"] .card.financeiro{
+  background-color:#f8f9fc; box-shadow:0 10px 28px rgba(2,6,23,.10);
+  border: 1px solid rgba(15,23,42,.12);
+}
+html[data-theme="light"] .card h4{ color:#334155; }
+html[data-theme="light"] .card h2,
+html[data-theme="light"] .card.financeiro h2{ color:#0f172a; }
+html[data-theme="light"] .card p{ color:#475569; }
+
+html[data-theme="light"] .servicos-header-list{
+  background:#e7ebf3; border-color:rgba(15,23,42,.12); color:#0f172a;
+}
+html[data-theme="light"] .lista-servicos li{
+  background:#eef1f6; border-color:rgba(15,23,42,.12); color:#0f172a;
+}
+html[data-theme="light"] .lista-servicos li:hover{ background:#e7ecf6; }
+
+html[data-theme="light"] .status-select{
+  background:#e9edf3; color:#0f172a; border:1px solid rgba(15,23,42,.18);
+}
+/* ===== ACCENT LATERAL DOS CARDS (independe de border) ===== */
+.card{
+  position: relative;
+  overflow: hidden;            /* recorta a faixa */
+}
+
+/* Faixa como pseudo-elemento (não é mais o border-left) */
+.card::before{
+  content:"";
+  position:absolute;
+  left:0; top:0; bottom:0;
+  width:6px;                   /* espessura da faixa */
+  border-radius:12px 0 0 12px; /* arredonda junto do card */
+  background: var(--accent, transparent);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset; /* leve definição */
+}
+
+/* Hover: brilho sutil na faixa */
+.card:hover::before{
+  filter: brightness(1.15);
+}
+
+/* Mapeia as cores das suas classes existentes */
+.card.blue   { --accent:#4db3ff; }
+.card.green  { --accent:#2CFF05; }
+.card.orange { --accent:#FF5C00; }
+.card.cyan   { --accent:#00FFFF; }
+.card.yellow { --accent:#FFFF00; }
+.card.white  { --accent:#ffffff; }
+
+/* Card financeiro não usa faixa */
+.card.financeiro::before{ display:none; }
+
+/* Opcional: no tema claro, deixa a faixa um tiquinho mais marcada */
+html[data-theme="light"] .card::before{
+  box-shadow: 0 0 0 1px rgba(15,23,42,.06) inset;
+}
+/* ===== Cabeçalho da lista (lado direito) — modo escuro com alto contraste ===== */
+.side-column .servicos-header-list{
+  display: grid !important;
+  grid-template-columns: 60px 1.2fr 1fr 1.4fr 120px;
+  align-items: center;
+  background: #1f252d !important;
+  border-bottom: 1px solid #2e343d !important;
+  border-radius: 6px 6px 0 0;
+  padding: 6px 10px 6px 14px;
+}
+
+.side-column .servicos-header-list .col-id,
+.side-column .servicos-header-list .col-nome,
+.side-column .servicos-header-list .col-modelo,
+.side-column .servicos-header-list .col-servico,
+.side-column .servicos-header-list .col-status{
+  color: #e6ecf1 !important;   /* texto claro */
+  font-weight: 700 !important;  /* reforça peso */
+  opacity: 1 !important;        /* remove qualquer opacidade herdada */
+  text-shadow: 0 1px 0 rgba(0,0,0,.25); /* leve definição no dark */
+}
+
+/* (opcional) deixe "OS" com azul da sua paleta */
+.side-column .servicos-header-list .col-id{
+  color: #69a7ff !important;
+}
+
+/* Tema claro correspondente (se usar auto-switch) */
+html[data-theme="light"] .side-column .servicos-header-list{
+  background: #e7ebf3 !important;
+  border-bottom: 1px solid rgba(15,23,42,.12) !important;
+}
+html[data-theme="light"] .side-column .servicos-header-list .col-id,
+html[data-theme="light"] .side-column .servicos-header-list .col-nome,
+html[data-theme="light"] .side-column .servicos-header-list .col-modelo,
+html[data-theme="light"] .side-column .servicos-header-list .col-servico,
+html[data-theme="light"] .side-column .servicos-header-list .col-status{
+  color: #0f172a !important;
+  text-shadow: none;
+}
+/* ==== LIGHT THEME: scrollbar clara no card lateral ==== */
+html[data-theme="light"] .servicos-scroll{
+  /* Firefox */
+  scrollbar-width: thin;                          /* thin | auto */
+  scrollbar-color: #b6c2d3 #edf1f7;               /* polegar | trilha */
+  background: #f8f9fc;                            /* garante fundo claro */
+  border-radius: 10px;
+}
+
+/* Chromium/WebKit */
+html[data-theme="light"] .servicos-scroll::-webkit-scrollbar{
+  width: 10px;
+}
+html[data-theme="light"] .servicos-scroll::-webkit-scrollbar-track{
+  background: #edf1f7;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(15,23,42,.08);
+}
+html[data-theme="light"] .servicos-scroll::-webkit-scrollbar-thumb{
+  background: linear-gradient(#cfd7e4, #a9b6c9);
+  border-radius: 10px;
+  border: 2px solid #edf1f7; /* cria “folga” clara */
+}
+html[data-theme="light"] .servicos-scroll::-webkit-scrollbar-thumb:hover{
+  background: #9aa9bf;
+}

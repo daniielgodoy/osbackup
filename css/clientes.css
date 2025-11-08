@@ -1,0 +1,709 @@
+/* container geral */
+.clientes-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  color: #e0e0e0;
+  overflow-x: hidden; /* evita rolagem horizontal */
+}
+
+/* header fixo da página */
+.clientes-header{
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  padding: 10px 0 12px;
+  background: #1b1f25; /* seu bg */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #2e343d;
+}
+.clientes-header h1{
+  font-size: 22px;
+  font-weight: 600;
+}
+.header-actions{ display:flex; gap:8px; }
+
+/* botões básicos (mesmo padrão do painel) */
+.btn{ border:1px solid #2e343d; background:#2b3038; color:#e0e0e0; padding:6px 12px; border-radius:8px; cursor:pointer; }
+.btn:hover{ filter: brightness(1.07); }
+.btn.primary{ background:#2a3845; border-color:#3a4b5c; }
+.btn.ghost{ background:transparent; }
+
+/* wrapper da tabela */
+.tbl-wrap {
+  margin-top: 10px;
+  background: #232832;
+  border: 1px solid #2e343d;
+  border-radius: 10px;
+  overflow: hidden; /* ✅ impede overflow lateral */
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+  width: 100%;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* 🔥 distribui o espaço igualmente */
+}
+
+.tbl thead th {
+  background: #1f252d;
+  color: #e6ecf1;
+  text-align: left;
+  font-weight: 600;
+  padding: 10px 8px;   /* 🔥 padding menor */
+  font-size: 14px;
+  border-bottom: 1px solid #2e343d;
+}
+
+.tbl tbody td {
+  padding: 10px 8px;
+  font-size: 14px;
+  border-bottom: 1px solid #2a313a;
+  color: #d7dbe0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap; /* 🔥 força caber em uma linha */
+}
+
+
+/* listrado */
+.tbl tbody tr:nth-child(odd){ background:#232832; }
+.tbl tbody tr:nth-child(even){ background:#1f2329; }
+
+/* hover suave na linha */
+.tbl tbody tr:hover{
+  background: #2b3038;
+}
+
+/* célula vazia */
+.vazio{
+  text-align:center;
+  padding: 18px;
+  color:#aeb7c1;
+}
+
+/* paginação */
+.pager{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; margin: 12px 2px 0;
+}
+.pg{
+  padding:6px 10px; border-radius:8px; border:1px solid #2e343d;
+  background:#2b3038; color:#e0e0e0; cursor:pointer;
+}
+.pg.active{ outline:2px solid #4db3ff; }
+
+/* modal base (reaproveita o seu padrão) */
+.modal.hidden{ display:none; }
+.modal .modal-body{
+  background:#232832; color:#e0e0e0;
+  border:1px solid #2e343d; border-radius:12px;
+  padding:16px; margin: 6vh auto; width: min(92vw, 860px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.45);
+}
+.grid-4{ display:grid; grid-template-columns: repeat(4,1fr); }
+.grid-4 > div input, .grid-4 > div select{
+  width:100%; padding:8px 10px; border-radius:8px; border:1px solid #2e343d;
+  background:#1f2329; color:#e0e0e0;
+}
+.modal-actions{ display:flex; justify-content:flex-end; gap:10px; }
+
+@media (max-width: 1024px){
+  .grid-4{ grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 640px){
+  .grid-4{ grid-template-columns: 1fr; }
+  .tbl thead th, .tbl tbody td{ padding: 10px 12px; }
+}
+.btn.small { padding:4px 8px; font-size:0.9em; }
+.btn.danger { background:#c0392b; color:#fff; }
+.btn.success { background:#27ae60; color:#fff; }
+/* ===== BOTÕES ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn i { font-size: 14px; }
+
+.btn.small {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+.btn.danger {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.btn.success {
+  background: #2ecc71;
+  color: #fff;
+}
+
+.btn.danger:hover { background: #c0392b; }
+.btn.success:hover { background: #27ae60; }
+.tbl td:last-child {
+  text-align: center;
+  width: 90px;
+}
+
+.tbl .btnExcluir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: #e74c3c;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.tbl .btnExcluir:hover {
+  background: #c0392b;
+  transform: scale(1.1);
+}
+.tbl td.acoes {
+  text-align: center;
+  min-width: 200px;   /* 🔥 aumenta espaço para os botões */
+  white-space: nowrap;
+  padding: 12px;
+}
+
+
+/* === Botões de ação === */
+.btnAcao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin: 0 4px;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btnAcao.editar { background: #3498db; }
+.btnAcao.editar:hover { background: #2980b9; transform: scale(1.1); }
+
+.btnAcao.excluir { background: #e74c3c; }
+.btnAcao.excluir:hover { background: #c0392b; transform: scale(1.1); }
+
+.btnAcao i { font-size: 15px; }
+
+/* ==== MODAL OVERLAY BASE ==== */
+.modal{
+  position: fixed;
+  inset: 0;
+  display: block;
+  background: rgba(0,0,0,0.55);
+  z-index: 9990;
+}
+.modal.hidden{ display:none; }
+.modal .modal-body{
+  position: relative;
+  z-index: 9991;
+}
+/* =========================
+   VARIÁVEIS DE TEMA
+========================= */
+:root{
+  --bg: #1b1f25;
+  --card: #232832;
+  --card-2: #1f2329;
+  --div: #2e343d;
+  --text: #e0e0e0;
+  --muted: #aeb7c1;
+  --accent: #4db3ff;
+
+  --success: #2ecc71;
+  --success-700:#27ae60;
+  --danger:  #e74c3c;
+  --danger-700:#c0392b;
+  --info:    #3498db;
+  --info-700:#2980b9;
+
+  --shadow: 0 12px 30px rgba(0,0,0,.45);
+}
+
+/* =========================
+   COLUNA DE AÇÕES / BOTÕES
+========================= */
+.tbl th:last-child,
+.tbl td.acoes{
+  text-align: center;
+  white-space: nowrap;
+}
+.tbl td.acoes{
+  min-width: 150px;
+  padding: 10px 12px;
+}
+
+/* Botão redondo com micro-elevação */
+.btnAcao{
+  display:inline-flex; align-items:center; justify-content:center;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: linear-gradient(180deg, #2c3139 0%, #22262e 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  transform: translateZ(0);
+  transition: transform .15s ease, box-shadow .2s ease, filter .2s ease, border-color .2s ease;
+}
+.btnAcao i{ font-size: 15px; line-height: 0; }
+
+.btnAcao:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  filter: brightness(1.05);
+}
+.btnAcao:active{ transform: translateY(0); }
+
+.btnAcao.editar{
+  background: linear-gradient(180deg, var(--info) 0%, var(--info-700) 100%);
+  border-color: rgba(255,255,255,.12);
+}
+.btnAcao.excluir{
+  background: linear-gradient(180deg, var(--danger) 0%, var(--danger-700) 100%);
+  border-color: rgba(255,255,255,.12);
+}
+
+/* Estado focado acessível */
+.btnAcao:focus{
+  outline: 2px solid rgba(77,179,255,.35);
+  outline-offset: 2px;
+}
+
+/* =========================
+   MODAIS (overlay + cartão)
+========================= */
+/* overlay com vidro/desfoque */
+.modal{
+  position: fixed; inset: 0;
+  display: none;
+  background: rgba(8,10,14,.55);
+  -webkit-backdrop-filter: blur(6px);
+          backdrop-filter: blur(6px);
+  z-index: 9990;
+}
+.modal:not(.hidden){ display:block; animation: overlayIn .18s ease-out; }
+@keyframes overlayIn { from {opacity:0} to {opacity:1} }
+
+/* cartão */
+.modal .modal-body{
+  width: min(92vw, 880px);
+  margin: 7vh auto;
+  background: linear-gradient(180deg, #262b35 0%, #1f232b 100%);
+  color: var(--text);
+  border: 1px solid var(--div);
+  border-radius: 14px;
+  box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.03) inset;
+  padding: 18px 18px 16px;
+  transform: translateY(10px) scale(.98);
+  opacity: 0;
+  animation: cardIn .22s ease-out forwards;
+}
+@keyframes cardIn {
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* título com linha sutil */
+.modal .modal-body h3{
+  font-size: 18px; font-weight: 600;
+  margin: 2px 2px 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(255,255,255,.08);
+}
+
+/* rodapé de ações do modal */
+.modal .modal-actions{
+  display:flex; justify-content:flex-end; gap:10px;
+  margin-top: 14px;
+}
+
+/* fechar por botão “Cancelar” (ghost) coeso */
+.btn-ghost, .btn.ghost{
+  border: 1px dashed rgba(255,255,255,.16) !important;
+  background: transparent !important;
+  color: var(--text) !important;
+}
+.btn-ghost:hover, .btn.ghost:hover{
+  border-style: solid !important;
+  background: rgba(255,255,255,.03) !important;
+}
+
+/* =========================
+   FORM do modal (inputs)
+========================= */
+.grid-2{ display:grid; grid-template-columns: repeat(2,1fr); gap:12px; }
+.grid-2 > div label{
+  display:block; font-size: 12px; color: var(--muted);
+  margin: 0 2px 6px;
+}
+.grid-2 > div input,
+.grid-2 > div select,
+.grid-2 > div textarea{
+  width: 100%;
+  background: #11161d;
+  color: var(--text);
+  border: 1px solid #2b3340;
+  border-radius: 10px;
+  padding: 10px 12px;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+.grid-2 > div textarea{ min-height: 80px; resize: vertical; }
+
+/* foco lindo com acento azul */
+.grid-2 > div input:focus,
+.grid-2 > div select:focus,
+.grid-2 > div textarea:focus{
+  outline: none;
+  border-color: rgba(77,179,255,.65);
+  box-shadow: 0 0 0 3px rgba(77,179,255,.18);
+  background: #0f141b;
+}
+
+/* inputs inválidos */
+.grid-2 > div input:invalid{
+  border-color: rgba(231,76,60,.55);
+  box-shadow: 0 0 0 2px rgba(231,76,60,.18);
+}
+
+/* quebra em telas menores */
+@media (max-width: 860px){
+  .modal .modal-body{ width: min(96vw, 720px); }
+}
+@media (max-width: 640px){
+  .grid-2{ grid-template-columns: 1fr; }
+}
+
+/* =========================
+   BOTÕES primários/secundários
+========================= */
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:14px; font-weight: 500;
+  background:#2b3038; color: var(--text);
+  border: 1px solid #2e343d;
+  transition: transform .12s ease, box-shadow .2s ease, filter .2s;
+}
+.btn i{ font-size: 14px; }
+.btn:hover{ filter:brightness(1.06); transform: translateY(-1px); }
+.btn:active{ transform: translateY(0); }
+
+.btn.primary{
+  background: linear-gradient(180deg, #2c7db8 0%, #1e547a 100%);
+  border-color: rgba(255,255,255,.14);
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(77,179,255,.18);
+}
+.btn.primary:hover{
+  box-shadow: 0 10px 28px rgba(77,179,255,.25);
+}
+
+.btn.success{
+  background: linear-gradient(180deg, var(--success) 0%, var(--success-700) 100%);
+  border-color: rgba(255,255,255,.14);
+  color: #fff;
+}
+.btn.danger{
+  background: linear-gradient(180deg, var(--danger) 0%, var(--danger-700) 100%);
+  border-color: rgba(255,255,255,.14);
+  color:#fff;
+}
+
+/* =========================
+   CABEÇALHO DA TABELA
+========================= */
+.tbl thead th{
+  background: linear-gradient(180deg, #212734 0%, #1a1f29 100%);
+  letter-spacing: .2px;
+}
+.tbl tbody tr:hover{ background:#2a3038; }
+
+/* =========================
+   TOAST (harmonizado)
+========================= */
+.toast{
+  border: 1px solid rgba(255,255,255,.12);
+}
+
+/* =========================
+   PEQUENOS AJUSTES RESPONSIVOS
+========================= */
+@media (max-width: 1200px){
+  .clientes-page{ padding: 14px; }
+}
+/* ======= MODAL: layout seguro, sem extrapolar, com respiro ======= */
+
+/* Overlay centralizado com folga nas bordas */
+.modal:not(.hidden){
+  display: flex !important;
+  align-items: flex-start;          /* começa um pouco abaixo do topo */
+  justify-content: center;
+  padding: 24px;                    /* evita grudar nas bordas da janela */
+}
+
+/* Cartão do modal: largura contida + scroll interno se precisar */
+.modal .modal-body{
+  width: min(90vw, 860px);          /* nunca passa da viewport */
+  max-width: 860px;
+  max-height: calc(100vh - 48px);   /* impede estourar a altura da tela */
+  overflow: auto;                   /* cria rolagem interna quando necessário */
+  box-sizing: border-box;           /* padding conta na largura */
+  margin: 0;                        /* controlamos com o padding do overlay */
+  padding: 22px 24px 18px;          /* respiro interno maior */
+  border-radius: 14px;
+}
+
+/* Título com mais respiro */
+.modal .modal-body h3{
+  margin: 2px 2px 16px;
+  padding-bottom: 10px;
+}
+
+/* Grid de campos: colunas elásticas + espaçamento consistente */
+.modal .modal-body .grid-2{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* minmax(0,1fr) evita overflow */
+  column-gap: 24px;       /* espaço lateral entre colunas */
+  row-gap: 16px;          /* espaço vertical entre linhas */
+}
+
+/* Permite que os inputs encolham dentro do grid sem vazar */
+.modal .modal-body .grid-2 > div{ min-width: 0; }
+
+.modal .modal-body .grid-2 > div label{
+  display:block;
+  font-size: 12.5px;
+  color: #b9c3cf;
+  margin: 0 2px 8px;      /* mais espaço entre label e input */
+}
+
+/* Campos confortáveis e sempre dentro do cartão */
+.modal .modal-body .grid-2 > div input,
+.modal .modal-body .grid-2 > div select,
+.modal .modal-body .grid-2 > div textarea{
+  width: 100%;
+  box-sizing: border-box;
+  height: 42px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #11161d;
+  border: 1px solid #2b3340;
+  color: #e0e0e0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Textarea um pouco mais alto */
+.modal .modal-body .grid-2 > div textarea{ min-height: 96px; resize: vertical; }
+
+/* Rodapé não colado nos campos */
+.modal .modal-actions{
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px dashed rgba(255,255,255,.10);
+}
+
+/* Campos que ficam melhor ocupando a linha inteira */
+.modal .modal-body .grid-2 > div:has([name="email"]),
+.modal .modal-body .grid-2 > div:has([name="logradouro"]){
+  grid-column: 1 / -1;  /* ocupa as duas colunas */
+}
+
+/* Nº mais estreito e Bairro com mais espaço — se quiser esse ajuste */
+.modal .modal-body .grid-2 > div:has([name="numero"]){ min-width: 160px; }
+
+/* Responsivo: em telas menores, vira 1 coluna e mantém respiro */
+@media (max-width: 760px){
+  .modal .modal-body{ width: min(96vw, 700px); padding: 20px 18px; }
+  .modal .modal-body .grid-2{ grid-template-columns: 1fr; column-gap: 0; }
+}
+
+/* Foco/erro (opcional, mas melhora muito a leitura) */
+.modal .modal-body .grid-2 > div input:focus,
+.modal .modal-body .grid-2 > div select:focus,
+.modal .modal-body .grid-2 > div textarea:focus{
+  outline: none;
+  border-color: rgba(77,179,255,.65);
+  box-shadow: 0 0 0 3px rgba(77,179,255,.18);
+  background: #0f141b;
+}
+.modal .modal-body .grid-2 > div input:invalid{
+  border-color: rgba(231,76,60,.55);
+  box-shadow: 0 0 0 2px rgba(231,76,60,.18);
+}
+/* === LIGHT THEME (cinza suave) === */
+html[data-theme="light"] {
+  --bg: #f3f5f9;
+  --card: #f8f9fc;
+  --card-2: #eef1f6;
+  --div: rgba(15,23,42,.12);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #2b68ff;
+
+  --success:#2e7d32; --success-700:#1b5e20;
+  --danger:#d32f2f;  --danger-700:#b71c1c;
+  --info:#2b68ff;    --info-700:#2352d6;
+
+  --shadow: 0 10px 28px rgba(2,6,23,.10);
+}
+
+/* página + header */
+html[data-theme="light"] .clientes-page { color: var(--text); }
+html[data-theme="light"] .clientes-header{
+  background:#f3f5f9; border-bottom:1px solid var(--div);
+}
+
+/* wrappers / tabela */
+html[data-theme="light"] .tbl-wrap{ background: var(--card); border-color: var(--div); box-shadow: var(--shadow); }
+html[data-theme="light"] .tbl thead th{ background:#e7ebf3; color:#0f172a; border-bottom:1px solid var(--div); }
+html[data-theme="light"] .tbl tbody td{ color:#1f2937; border-bottom:1px solid rgba(15,23,42,.08); }
+html[data-theme="light"] .tbl tbody tr:nth-child(odd){ background:#f8f9fc; }
+html[data-theme="light"] .tbl tbody tr:nth-child(even){ background:#eef1f6; }
+html[data-theme="light"] .tbl tbody tr:hover{ background:#e7ecf6; }
+
+/* botões */
+html[data-theme="light"] .btn{ background:#e9edf3; color:var(--text); border:1px solid var(--div); }
+html[data-theme="light"] .btn.primary{
+  background: linear-gradient(180deg, var(--info) 0%, var(--info-700) 100%);
+  color:#fff; border-color: transparent; box-shadow: 0 6px 18px rgba(43,104,255,.18);
+}
+html[data-theme="light"] .btn.ghost{ background:transparent; }
+
+/* modais */
+html[data-theme="light"] .modal{ background: rgba(15,23,42,.35); }
+html[data-theme="light"] .modal .modal-body{
+  background: var(--card); color: var(--text); border:1px solid var(--div); box-shadow: var(--shadow);
+}
+html[data-theme="light"] .grid-4 > div input,
+html[data-theme="light"] .grid-4 > div select{
+  background:#eef2f7; color:#0f172a; border:1px solid rgba(15,23,42,.16);
+}
+/* ===== FIX ESPECÍFICO: MODAL CLARO ===== */
+html[data-theme="light"] .modal{
+  display: none !important;
+  position: fixed !important;
+  inset: 0 !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding: 28px !important;
+  background: rgba(15,23,42,.28) !important;        /* overlay translúcido claro */
+  -webkit-backdrop-filter: blur(4px) !important;
+          backdrop-filter: blur(4px) !important;
+  z-index: 999999 !important;
+}
+html[data-theme="light"] .modal:not(.hidden){ display:flex !important; }
+
+html[data-theme="light"] .modal .modal-body{
+  width: min(92vw, 880px) !important;
+  max-height: calc(100vh - 64px) !important;        /* nunca estoura a viewport */
+  overflow: auto !important;
+  margin: 0 !important;
+  padding: 24px 24px 86px !important;               /* espaço pro rodapé */
+  background: var(--card) !important;               /* claro */
+  color: var(--text) !important;                    /* texto escuro do tema claro */
+  border: 1px solid var(--div) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* Título */
+html[data-theme="light"] .modal .modal-body h3{
+  color: var(--text) !important;
+  margin: 2px 2px 16px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 1px dashed var(--div) !important;
+}
+
+/* Labels */
+html[data-theme="light"] .modal .modal-body .grid-2 > div label{
+  color: var(--muted) !important;
+}
+
+/* Campos (claros) */
+html[data-theme="light"] .modal .modal-body .grid-2 > div input,
+html[data-theme="light"] .modal .modal-body .grid-2 > div select,
+html[data-theme="light"] .modal .modal-body .grid-2 > div textarea{
+  background: #ffffff !important;
+  border: 1px solid rgba(15,23,42,.16) !important;
+  color: #0f172a !important;
+  height: 46px !important;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+}
+html[data-theme="light"] .modal .modal-body .grid-2 > div textarea{
+  min-height: 100px !important;
+}
+html[data-theme="light"] .modal .modal-body ::placeholder{
+  color: #64748b !important;
+  opacity: .95 !important;
+}
+
+/* Foco azul visível no claro */
+html[data-theme="light"] .modal .modal-body .grid-2 > div input:focus,
+html[data-theme="light"] .modal .modal-body .grid-2 > div select:focus,
+html[data-theme="light"] .modal .modal-body .grid-2 > div textarea:focus{
+  outline: none !important;
+  border-color: rgba(43,104,255,.75) !important;
+  box-shadow: 0 0 0 3px rgba(43,104,255,.22) !important;
+  background: #ffffff !important;
+}
+
+/* Footer sempre visível, em tom claro */
+html[data-theme="light"] .modal .modal-actions{
+  position: sticky !important;
+  bottom: -24px !important;
+  margin-top: 0 !important;
+  padding-top: 12px !important;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,.96)) !important;
+  border-top: 1px dashed var(--div) !important;
+}
+
+/* Grid seguro */
+html[data-theme="light"] .modal .modal-body .grid-2{
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  column-gap: 24px !important;
+  row-gap: 16px !important;
+}
+html[data-theme="light"] .modal .modal-body .grid-2 > div{ min-width: 0 !important; }
+
+/* Campos longos em largura total */
+html[data-theme="light"] .modal .modal-body .grid-2 > div:has([name="email"]),
+html[data-theme="light"] .modal .modal-body .grid-2 > div:has([name="logradouro"]){
+  grid-column: 1 / -1 !important;
+}
+
+/* Responsivo */
+@media (max-width: 760px){
+  html[data-theme="light"] .modal .modal-body{
+    width: min(96vw, 700px) !important;
+    padding: 20px 18px 86px !important;
+  }
+  html[data-theme="light"] .modal .modal-body .grid-2{
+    grid-template-columns: 1fr !important;
+    column-gap: 0 !important;
+  }
+}

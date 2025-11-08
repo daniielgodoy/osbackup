@@ -1,0 +1,184 @@
+/* ============================
+   V10 — Tema CLARO (override definitivo para style.css)
+   Carregar POR ÚLTIMO
+   ============================ */
+
+/* Paleta */
+:root[data-theme="light"]{
+  --bg:#f6f8fb;
+  --surface:#ffffff;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#475569;
+  --border:#e6e9f0;
+  --primary:#2080ff;
+  --primary-700:#1a66cc;
+  --shadow:0 10px 28px rgba(2,6,23,.08);
+}
+
+/* Base + layout */
+:root[data-theme="light"] body,
+:root[data-theme="light"] .content{
+  background:var(--bg) !important;
+  color:var(--text) !important;
+}
+:root[data-theme="light"] .dashboard-header h2{ color:var(--text) !important; }
+:root[data-theme="light"] .muted{ color:var(--muted) !important; }
+
+/* NAVBAR */
+:root[data-theme="light"] .navbar{
+  background:var(--surface) !important;
+  border-bottom:1px solid var(--border) !important;
+  box-shadow:0 2px 10px rgba(2,6,23,.06) !important;
+}
+:root[data-theme="light"] .navbar a,
+:root[data-theme="light"] .navbar .icon-btn,
+:root[data-theme="light"] .navbar .brand{
+  color:#1f2937 !important;
+}
+:root[data-theme="light"] .navbar a.active{ color:#0b62d6 !important; font-weight:700 !important; }
+:root[data-theme="light"] .navbar a:hover,
+:root[data-theme="light"] .navbar .icon-btn:hover{ color:var(--primary) !important; }
+
+/* CARDS (status/financeiro/widgets) */
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .chart-box,
+:root[data-theme="light"] .servicos-card,
+:root[data-theme="light"] .card.financeiro{
+  background:var(--card) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:var(--shadow) !important;
+}
+:root[data-theme="light"] .card h4{ color:#334155 !important; }
+:root[data-theme="light"] .card h2,
+:root[data-theme="light"] .card.financeiro h2{ color:var(--text) !important; }
+:root[data-theme="light"] .card p{ color:var(--muted) !important; }
+:root[data-theme="light"] .card .icon{ color:#64748b !important; opacity:.25 !important; }
+
+/* CHARTS (só caixas/títulos; o canvas é do Chart.js) */
+:root[data-theme="light"] .chart-box h3{ color:var(--text) !important; }
+
+/* LISTA DE SERVIÇOS (direita) */
+:root[data-theme="light"] .servicos-header-list{
+  background:#eef2f7 !important;
+  border-bottom:1px solid var(--border) !important;
+  color:#111827 !important;
+}
+:root[data-theme="light"] .lista-servicos li{
+  background:#f7f9fc !important;
+  border:1px solid var(--border) !important;
+  color:#111827 !important;
+}
+:root[data-theme="light"] .lista-servicos li:hover{ background:#eef4ff !important; }
+:root[data-theme="light"] .os-id,.col-id{ color:#0b62d6 !important; }
+:root[data-theme="light"] .os-nome,.col-nome{ color:#0f172a !important; }
+:root[data-theme="light"] .os-modelo,.col-modelo{ color:#334155 !important; }
+:root[data-theme="light"] .os-servico,.col-servico{ color:#475569 !important; }
+
+/* Select de status */
+:root[data-theme="light"] .status-select{
+  background:#e9edf3 !important;
+  color:#0f172a !important;
+  border:1px solid #cfd8e3 !important;
+}
+:root[data-theme="light"] .status-select:hover{
+  background:#e2e8f0 !important;
+  border-color:#b8c2d1 !important;
+}
+:root[data-theme="light"] select option{
+  background:#fff !important; color:#0f172a !important;
+}
+
+/* FINANCEIRO (sub-caixas) */
+:root[data-theme="light"] .card.financeiro{ border-left:none !important; }
+:root[data-theme="light"] .card.financeiro h4{ color:#0f172a !important; }
+:root[data-theme="light"] .card.financeiro p{ color:#475569 !important; }
+:root[data-theme="light"] .card.financeiro .sub-valores .campo{
+  background:#f3f6fb !important;
+  border:1px solid var(--border) !important;
+  box-shadow:none !important;
+}
+:root[data-theme="light"] .card.financeiro .sub-valores .label{ color:#334155 !important; }
+:root[data-theme="light"] .card.financeiro .sub-valores span:last-child{ color:#0f172a !important; }
+
+/* INPUTS / TEXTAREAS / AUTOCOMPLETE */
+:root[data-theme="light"] input[type],
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea{
+  background:#fff !important;
+  color:#0f172a !important;
+  border:1px solid #d7dde6 !important;
+}
+:root[data-theme="light"] input::placeholder,
+:root[data-theme="light"] textarea::placeholder{ color:#7b8794 !important; }
+:root[data-theme="light"] :is(input,select,textarea):focus{
+  border-color:var(--primary) !important;
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent) !important;
+  outline:0 !important;
+}
+:root[data-theme="light"] .auto-list{
+  background:#fff !important;
+  border:1px solid var(--border) !important;
+  box-shadow:0 10px 24px rgba(15,23,42,.10) !important;
+}
+:root[data-theme="light"] .auto-item{ color:#0f172a !important; }
+:root[data-theme="light"] .auto-item:hover{ background:#eef4ff !important; color:#0b1220 !important; }
+:root[data-theme="light"] .auto-muted{ color:#64748b !important; }
+
+/* BOTÕES */
+:root[data-theme="light"] .btn{
+  background:#f3f6fb !important;
+  color:#0f172a !important;
+  border:1px solid var(--border) !important;
+}
+:root[data-theme="light"] .btn.primary{
+  background:linear-gradient(180deg,var(--primary),var(--primary-700)) !important;
+  color:#fff !important;
+  border-color:transparent !important;
+}
+
+/* Scrollbar */
+:root[data-theme="light"] *::-webkit-scrollbar-thumb{ background:#cfd6e2 !important; }
+:root[data-theme="light"] *::-webkit-scrollbar-track{ background:#eef2f7 !important; }
+
+/* Patch dark: links da navbar não “azulam” tudo */
+:root[data-theme="dark"] .navbar a:hover{ color:#4db3ff !important; }
+/* ====== Charts – alto contraste (LIGHT) ====== */
+:root[data-theme="light"]{
+  --chart-text: #0f172a;           /* texto */
+  --chart-muted:#475569;           /* legenda */
+  --chart-grid: #d6dce7;           /* linhas/bordas */
+  --chart-ontem-fill: rgba(44,120,255,.22);
+  --chart-ontem-border: #2c78ff;
+  --chart-hoje-fill:  rgba(16,185,129,.22);
+  --chart-hoje-border:#10b981;
+}
+
+:root[data-theme="light"] .chart-box{
+  background:#fff !important;
+  border:1px solid #e6e9f0 !important;
+  box-shadow: 0 8px 20px rgba(17,24,39,.06) !important;
+}
+
+:root[data-theme="light"] .chart-box h3{
+  color: var(--chart-text) !important;
+  font-weight: 600;
+}
+
+:root[data-theme="light"] .chart-box canvas{
+  background: transparent;
+  /* melhora anti-aliasing de arcos finos */
+  image-rendering: -webkit-optimize-contrast;
+}
+
+:root[data-theme="light"] .chart-legend,
+:root[data-theme="light"] .chart-box .legend,
+:root[data-theme="light"] .chart-box .chartjs-legend{
+  color: var(--chart-muted) !important;
+}
+
+/* Donuts compactos, com respiro */
+.charts-four .chart-box{ padding: 16px 18px !important; }
+.charts-four .chart-box h3{ margin-bottom: 8px !important; }
+.charts-four .chart-box canvas{ min-height: 168px; max-height: 220px; }

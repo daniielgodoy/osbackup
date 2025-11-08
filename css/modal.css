@@ -1,0 +1,404 @@
+.modal {
+  display: none; /* 🔹 garante que inicie escondido */
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.modal-content {
+  background: #fff;
+  color: #333;
+  border-radius: 16px;
+  padding: 30px;
+  width: 750px;
+  max-width: 95vw;
+  box-shadow: 0 0 25px rgba(0,0,0,0.3);
+  position: relative;
+  font-family: 'Poppins', sans-serif;
+  transform-origin: center center;
+  animation: fadeIn 0.3s ease;
+  transition: transform 0.2s ease;
+}
+
+/* Animação suave */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Deixa responsivo na largura */
+@media (max-width: 600px) {
+  .modal-content {
+    width: 95vw;
+    padding: 20px;
+    border-radius: 10px;
+  }
+}
+
+
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  font-size: 24px;
+  color: #333;
+  cursor: pointer;
+}
+.close-btn:hover { color: #f44336; }
+
+.os-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.os-header .os-numero {
+  display: inline-block;
+  background: #cfe8ff;
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.os-header h2 {
+  color: #d32f2f;
+  margin-top: 8px;
+  margin-bottom: 5px;
+}
+.os-header p {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 3px 0;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+.form-group label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.form-group input,
+.form-group textarea {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.aviso-vermelho {
+  color: #d32f2f;
+  font-weight: bold;
+  text-align: center;
+  margin: 15px 0 10px 0;
+}
+
+.assinatura {
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 15px;
+  color: #555;
+}
+
+.btn-submit {
+  display: block;
+  width: 100%;
+  background: #1976d2;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn-submit:hover {
+  background: #0d47a1;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+/* Campo de senha estilo padrão Android */
+.senha-pattern {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.senha-pattern label {
+  font-weight: 600;
+  margin-right: 5px;
+}
+
+.pattern-dots {
+  display: grid;
+  grid-template-columns: repeat(3, 10px);
+  grid-template-rows: repeat(3, 10px);
+  gap: 8px;
+  margin-left: 5px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333;
+}
+
+/* Linha da senha */
+.senha-linha {
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* Tudo na mesma linha */
+.senha-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  width: 100%;
+}
+
+/* Label "Senha:" */
+.senha-row label {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  margin: 0;
+}
+
+/* Canvas 90x90 */
+#patternCanvas {
+  background: #fafafa;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: crosshair;
+  width: 90px;
+  height: 90px;
+  flex-shrink: 0;
+}
+
+/* Campo de senha escrita */
+#senhaEscrita {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #333;
+  height: 35px;
+  width: 180px;
+}
+#senhaEscrita::placeholder {
+  color: #888;
+}
+
+/* Grupo de checkboxes */
+.senha-checks {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 5px;
+}
+
+/* Checkbox elegante */
+.check-elegante {
+  position: relative;
+  padding-left: 24px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+
+/* Esconde o checkbox padrão */
+.check-elegante input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Novo estilo do quadradinho */
+.check-elegante .checkmark {
+  position: absolute;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  background-color: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: 0.2s;
+}
+
+/* Hover */
+.check-elegante:hover input ~ .checkmark {
+  background-color: #e0e0e0;
+}
+
+/* Quando marcado */
+.check-elegante input:checked ~ .checkmark {
+  background-color: #1976d2;
+  border-color: #1565c0;
+}
+
+/* Marcado (símbolo de ✓) */
+.check-elegante .checkmark::after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.check-elegante input:checked ~ .checkmark::after {
+  display: block;
+}
+
+.check-elegante .checkmark::after {
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Aviso de multa */
+.aviso-multa {
+  color: #b71c1c;
+  font-weight: 500;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 5px 0 15px 0;
+}
+.servicos-scroll {
+  max-height: 250px;          /* altura reduzida */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #555 #1f2329;
+}
+/* Modal de seleção de pagamento */
+.modal-pagamento {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-pagamento-content {
+  background: #1f2329;
+  border: 1px solid #2e343d;
+  padding: 20px 25px;
+  border-radius: 10px;
+  text-align: center;
+  width: 280px;
+  color: #fff;
+}
+
+.modal-pagamento-content h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #add8ec;
+}
+
+.modal-pagamento-content select {
+  width: 100%;
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid #3a3f47;
+  background: #2a2f36;
+  color: #fff;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.confirm-btn, .cancel-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.confirm-btn {
+  background: #4caf50;
+  color: #fff;
+}
+
+.cancel-btn {
+  background: #f44336;
+  color: #fff;
+}
+/* 4 campos na mesma linha (quebra em 2x2 no mobile) */
+.form-row.form-row-pagamentos{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px,1fr));
+  gap: 12px;
+}
+@media (max-width: 900px){
+  .form-row.form-row-pagamentos{
+    grid-template-columns: repeat(2, minmax(120px,1fr));
+  }
+}
+.form-row.form-row-pagamentos .form-group input{
+  text-align: right;
+}
+/* === LIGHT THEME === */
+html[data-theme="light"] .modal{ background: rgba(15,23,42,.35); }
+html[data-theme="light"] .modal-content{
+  background: #f8f9fc; color:#0f172a; border:1px solid rgba(15,23,42,.12);
+  box-shadow: 0 10px 28px rgba(2,6,23,.10);
+}
+html[data-theme="light"] .close-btn{ color:#0f172a; }
+html[data-theme="light"] .os-header .os-numero{ background:#e7ecf6; color:#0f172a; }
+html[data-theme="light"] .form-group input,
+html[data-theme="light"] .form-group textarea{
+  background:#eef2f7; border:1px solid rgba(15,23,42,.18); color:#0f172a;
+}
+html[data-theme="light"] #patternCanvas{ background:#eef2f7; border:1px solid rgba(15,23,42,.18); }
+html[data-theme="light"] .dot{ background:#475569; }
+html[data-theme="light"] #senhaEscrita{ background:#eef2f7; border:1px solid rgba(15,23,42,.18); color:#0f172a; }
+
+html[data-theme="light"] .modal-pagamento-content{
+  background:#f8f9fc; border:1px solid rgba(15,23,42,.12); color:#0f172a;
+}
+html[data-theme="light"] .styled-select{
+  background:#eef2f7; border:1px solid rgba(15,23,42,.18); color:#0f172a;
+}
+html[data-theme="light"] .valor-box{
+  background:#eef1f6; border:1px solid rgba(15,23,42,.12);
+}

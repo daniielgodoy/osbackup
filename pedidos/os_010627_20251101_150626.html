@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <title>OS #10627</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Página A4 e ajuste para caber em 1 folha */
+    @page { size: A4; margin: 10mm; }
+    *{ box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact }
+    html,body{ margin:0; padding:0; background:#f6f7fb; color:#0f172a; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif; }
+
+    .wrap{ max-width:180mm; margin:0 auto; }
+    .modal{
+      background:#fff; border:1px solid #e7ecf4; border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.06);
+      padding:12mm 12mm 10mm;
+    }
+
+    /* Cabeçalho igual ao modal */
+    .badge{
+      display:inline-block; padding:6px 12px; border-radius:12px;
+      background:#e9f0ff; color:#2c4de2; font-weight:700; font-size:13px;
+      border:1px solid #d8e2ff; margin:0 auto 6px;
+    }
+    h1{ font-size:22px; font-weight:800; text-align:center; margin:4px 0 6px; }
+    .sub{ text-align:center; font-size:12px; color:#475569; line-height:1.35; margin-bottom:10px; }
+
+    /* Campos desenhados como inputs do modal */
+    .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:6px; }
+    .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px; }
+    .field{ display:flex; flex-direction:column; gap:4px; }
+    .lbl{ font-size:11px; color:#334155; }
+    .val{
+      border:1px solid #e7ecf4; background:#f8fafc; padding:8px 10px;
+      border-radius:10px; font-size:12px; color:#0f172a; min-height:34px;
+      display:flex; align-items:center;
+    }
+
+    /* “Senha” igual ao modal */
+    .senha-area{ display:grid; grid-template-columns:120px 1fr; gap:8px; align-items:center; margin-top:6px; }
+    .padlock{
+      width:120px; height:120px; border:1px solid #e7ecf4; background:#f8fafc; border-radius:10px;
+      display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:10px; padding:10px;
+    }
+    .padlock div{ border:1px dashed #cbd5e1; border-radius:8px; }
+
+    /* Pagamentos como no modal */
+    .pay{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+    .checkrow{ display:flex; align-items:center; gap:16px; margin-top:6px; }
+    .check{ width:14px; height:14px; border:1px solid #cbd5e1; border-radius:4px; display:inline-block; }
+    .checklbl{ font-size:12px; color:#0f172a; display:flex; align-items:center; gap:8px; }
+
+    /* Avisos idênticos */
+    .warn{ margin-top:10px; text-align:center; color:#b91c1c; font-weight:700; font-size:12px; }
+    .notice{ margin-top:6px; color:#64748b; font-size:11px; text-align:center; line-height:1.4; }
+
+    /* Linha de assinatura */
+    .assin{ margin-top:12px; text-align:center; color:#0f172a; }
+    .assin::before{ content:""; display:block; border-top:1px solid #94a3b8; margin:16px auto 4px; width:65%; }
+    .assin small{ color:#64748b; font-size:11px }
+
+    /* Botão “Salvar OS” (apenas visual) */
+    .btn{
+      margin-top:10px; width:100%; text-align:center; padding:10px 12px; border-radius:10px;
+      background:#2c4de2; color:#fff; font-weight:700; font-size:13px; border:none;
+    }
+
+    /* Impressão: ocupar 1 página, sem sombras */
+    @media print {
+      html,body{ background:#fff; }
+      .modal{ box-shadow:none; border:1px solid #e7ecf4; padding:10mm; }
+      .btn{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="modal">
+      <div style="text-align:center">
+        <span class="badge">Ordem Nº 10627 ______</span>
+      </div>
+      <h1>Ordem de Serviço</h1>
+      <div class="sub">
+        Fica neste ato o cliente responsável civil e criminalmente pela procedência do aparelho.<br>
+        Não nos responsabilizamos por cartões ou chips deixados no aparelho.
+      </div>
+
+      <!-- Linha: Nome / Telefone / CPF -->
+      <div class="grid-3">
+        <div class="field"><div class="lbl">Nome:</div><div class="val">Beatriz Souza</div></div>
+        <div class="field"><div class="lbl">Telefone:</div><div class="val">(12) 98123-0008</div></div>
+        <div class="field"><div class="lbl">CPF:</div><div class="val">89012345678</div></div>
+      </div>
+
+      <!-- Linha: CEP / Logradouro / Número -->
+      <div class="grid-3">
+        <div class="field"><div class="lbl">CEP:</div><div class="val">12500-008</div></div>
+        <div class="field"><div class="lbl">Logradouro:</div><div class="val">Rua Bahia</div></div>
+        <div class="field"><div class="lbl">Número:</div><div class="val">77</div></div>
+      </div>
+
+      <!-- Linha: Bairro / Cidade / UF -->
+      <div class="grid-3">
+        <div class="field"><div class="lbl">Bairro:</div><div class="val">Vila Paraíba</div></div>
+        <div class="field"><div class="lbl">Cidade:</div><div class="val">Guaratinguetá</div></div>
+        <div class="field"><div class="lbl">UF:</div><div class="val">SP</div></div>
+      </div>
+
+      <!-- Linha: Modelo / Serviço -->
+      <div class="grid-2">
+        <div class="field"><div class="lbl">Modelo do aparelho:</div><div class="val">s24</div></div>
+        <div class="field"><div class="lbl">Serviço prestado:</div><div class="val">tela</div></div>
+      </div>
+
+      <!-- Linha: Data / Hora -->
+      <div class="grid-2">
+        <div class="field"><div class="lbl">Data de entrada:</div><div class="val">01/11/2025</div></div>
+        <div class="field"><div class="lbl">Hora de entrada:</div><div class="val">11:06:00</div></div>
+      </div>
+
+      <!-- Observações -->
+      <div class="field" style="margin-top:6px">
+        <div class="lbl">Observações:</div>
+        <div class="val" style="min-height:54px"></div>
+      </div>
+
+      <!-- Senha (padrão e escrita) -->
+      <div class="senha-area">
+        <div class="field">
+          <div class="lbl">Senha:</div>
+          <div class="padlock"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+        </div>
+        <div class="field" style="align-self:end">
+          <div class="lbl">&nbsp;</div>
+          <div class="val">Senha escrita (se houver)</div>
+        </div>
+      </div>
+
+      <!-- Pagamentos (apenas os dois campos do modal) -->
+      <div class="pay">
+        <div class="field">
+          <div class="lbl">✅ Valor Dinheiro / Pix (R$)</div>
+          <div class="val">0,00</div>
+        </div>
+        <div class="field">
+          <div class="lbl">💳 Valor Cartão (R$)</div>
+          <div class="val">0,00</div>
+        </div>
+      </div>
+
+      <!-- Checkboxes (somente visual, fiéis ao modal) -->
+      <div class="checkrow">
+        <span class="check"></span><span class="checklbl">Pagamento na retirada</span>
+        <span class="check"></span><span class="checklbl">Pagamento na entrada</span>
+      </div>
+
+      <!-- Avisos e assinatura -->
+      <div class="warn">Aparelho só será liberado mediante apresentação desta ordem de serviço.</div>
+      <div class="notice">
+        Caso o aparelho não seja retirado em até 30 (trinta) dias após a conclusão do serviço, será cobrada multa de 1%
+        (um por cento) ao dia sobre o valor total do serviço, conforme o Artigo 408 do Código Civil Brasileiro, que
+        prevê a incidência de penalidade em caso de descumprimento de obrigação por parte do devedor.
+      </div>
+      <div class="assin"><small>Assinatura do cliente</small></div>
+
+      <!-- Botão (visual) -->
+      <div class="btn">Salvar OS</div>
+    </div>
+  </div>
+
+</body>
+</html>

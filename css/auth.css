@@ -1,0 +1,374 @@
+:root{
+  --bg: #0f131a;
+  --panel: #151a23;
+  --panel-2: #1b2030;
+  --card: #121722;
+  --text: #e5e7eb;
+  --muted: #9aa3b2;
+  --primary: #4db3ff;
+  --primary-2: #2d8ad3;
+  --danger: #ef4444;
+  --ok: #22c55e;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  --radius: 16px;
+}
+
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body.auth-body{
+  margin:0;
+  font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Arial, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -20%, #1a2440 0%, transparent 70%),
+    radial-gradient(1200px 600px at 110% 120%, #132036 0%, transparent 70%),
+    linear-gradient(180deg, #0b0f17 0%, #0f131a 100%);
+}
+
+.auth-container{
+  min-height: 100%;
+  display:flex;
+  flex-direction: column;
+  align-items:center;
+  justify-content:center;
+  padding: 24px;
+  gap: 24px;
+}
+
+.auth-card{
+  width: 100%;
+  max-width: 1000px;
+  background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 1.1fr .9fr;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.panel{
+  padding: 28px;
+}
+
+.panel-left{
+  display:flex;
+  flex-direction: column;
+  gap: 20px;
+  border-right: 1px solid rgba(255,255,255,.04);
+}
+
+.brand{
+  display:flex; align-items:center; gap:12px;
+}
+.brand .logo{
+  width: 42px; height:42px; border-radius:12px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  display:flex; align-items:center; justify-content:center;
+  color:#00172a; font-weight:800;
+  box-shadow: inset 0 0 20px rgba(255,255,255,.15);
+}
+.brand .subtitle{ color: var(--muted); font-size: 14px; }
+
+.form{
+  display:none;
+  max-width: 520px;
+  width:100%;
+  background: rgba(0,0,0,.15);
+  border: 1px solid rgba(255,255,255,.05);
+  padding: 18px;
+  border-radius: 14px;
+  backdrop-filter: blur(6px);
+}
+.form.active{ display:block; }
+
+.form h1{
+  margin: 4px 0 2px;
+  font-size: 26px;
+  font-weight: 700;
+}
+.form .muted{
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.field{ margin: 12px 0; display:flex; flex-direction: column; gap:8px; }
+.field label{ color: #cbd5e1; font-size: 13px; }
+.field input{
+  background: #0f1420;
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--text);
+  padding: 12px 14px;
+  border-radius: 10px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.field input::placeholder{ color: #7c869a; }
+.field input:focus{
+  border-color: rgba(77,179,255,.7);
+  box-shadow: 0 0 0 4px rgba(77,179,255,.15);
+  background: #0d1320;
+}
+
+.with-addon{ position: relative; }
+.with-addon .addon{
+  position: absolute; right: 8px; bottom: 8px;
+  height: 32px; min-width: 36px;
+  background: #0f1420; border: 1px solid rgba(255,255,255,.08);
+  color: var(--muted); border-radius: 8px; cursor: pointer;
+}
+.with-addon .addon.on{ color: var(--primary); border-color: rgba(77,179,255,.7); }
+
+.handle-wrap{
+  display:flex; align-items:center; gap:8px;
+  background: #0f1420; border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px; padding: 0 10px;
+}
+.handle-wrap span{ color:#7c869a; }
+.handle-wrap input{
+  border: none; background: transparent; padding: 12px 6px; flex:1;
+}
+
+.row{ display:flex; align-items:center; gap:12px; }
+.between{ justify-content: space-between; }
+.check input{ margin-right: 8px; }
+
+.btn{
+  appearance: none; border: 0; cursor: pointer;
+  border-radius: 12px; padding: 12px 16px; font-weight: 600;
+  background: #0f1420; color: var(--text);
+  border: 1px solid rgba(255,255,255,.08);
+}
+.btn.primary{
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #00172a; border: none;
+}
+.btn.primary:hover{ filter: brightness(1.05); }
+.btn.full{ width:100%; margin-top: 8px; }
+.btn.loading{ opacity:.7; pointer-events:none; }
+
+.link{
+  background: none; border: none; color: var(--primary); cursor: pointer;
+  text-decoration: underline; padding:0; font: inherit;
+}
+.link.small{ font-size: 13px; color: #8fbce0; text-decoration: none; }
+.link.small:hover{ text-decoration: underline; }
+
+.switcher{ text-align:center; margin-top: 10px; color: var(--muted); }
+
+.msg{
+  margin-top: 10px; min-height: 18px; font-size: 13px; color: #ffd2d2;
+}
+
+.panel-right{
+  background:
+    radial-gradient(500px 280px at 120% 0%, rgba(77,179,255,.2) 0%, transparent 60%),
+    linear-gradient(180deg, #111727, #0f1422);
+  display:flex; align-items:center; justify-content:center;
+}
+.hero{ max-width: 360px; text-align: center; }
+.hero h2{ font-size: 28px; margin:0 0 10px; }
+.hero p{ color: var(--muted); margin:0; }
+
+.auth-footer{ color: var(--muted); font-size: 12px; }
+
+/* Responsivo */
+@media (max-width: 900px){
+  .auth-card{ grid-template-columns: 1fr; }
+  .panel-right{ display:none; }
+  .panel-left{ border-right: none; }
+}
+@media (max-width: 420px){
+  .auth-container{ padding: 12px; }
+  .form{ padding: 14px; }
+}
+/* ====== Brand com logo imagem ====== */
+.brand .logo-img{
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.35));
+  border-radius: 8px;
+}
+
+/* ====== Eye button ====== */
+.with-addon { position: relative; }
+.addon.eye{
+  position: absolute; right: 8px; bottom: 8px;
+  height: 36px; min-width: 40px;
+  display: grid; place-items: center;
+  background: #0f1420; border: 1px solid rgba(255,255,255,.08);
+  color: var(--muted); border-radius: 10px; cursor: pointer;
+  transition: border-color .2s, background .2s, box-shadow .2s, transform .1s;
+}
+.addon.eye:active { transform: scale(.98); }
+.addon.eye:hover{
+  border-color: rgba(77,179,255,.55);
+  box-shadow: 0 0 0 4px rgba(77,179,255,.14);
+}
+
+/* SVG parts */
+.eye-svg{ width: 26px; height: 14px; overflow: visible; }
+.eye-outline{
+  fill: none;
+  stroke: #7c869a;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke .2s ease;
+}
+.eye-pupil{
+  fill: #cfe9ff;
+  transition: transform .25s ease, fill .2s ease;
+  transform-origin: 32px 16px;
+}
+.eye-lid{
+  fill: #0f1420;            /* mesma cor do fundo do input/botão */
+  transition: transform .28s ease;
+  transform: translateY(-0%);
+}
+
+/* Estado ABERTO (senha visível) */
+.addon.eye.open .eye-lid{
+  transform: translateY(-100%); /* pálpebra sobe, olho abre */
+}
+.addon.eye.open .eye-pupil{
+  transform: scale(1);
+  fill: #ffffff;
+}
+
+/* Estado FECHADO (senha oculta) */
+.addon.eye.closed .eye-lid{
+  transform: translateY(-20%); /* pálpebra baixa cobrindo o olho */
+}
+.addon.eye.closed .eye-pupil{
+  transform: scale(0.25);
+  fill: #9bb7cf;
+}
+
+/* “Piscada” rápida quando alterna (efeito sutil) */
+.addon.eye.blink .eye-lid{
+  transition-duration: 120ms;
+}
+
+/* Ajuste leve no mobile */
+@media (max-width: 420px){
+  .addon.eye{ height: 34px; min-width: 38px; }
+  .eye-svg{ width: 24px; height: 13px; }
+}
+/* ===== Botão mostrar/ocultar senha (minimal) ===== */
+:root{
+  --eye-right: 10px;   /* distância da borda direita */
+  --eye-offsetY: 2px;  /* abaixa levemente */
+  --eye-size: 18px;    /* tamanho do ícone */
+  --eye-color: #9aa4b2;/* cor sutil */
+  --eye-color-hover: #cfd6e0;
+}
+
+.with-addon{ position: relative; }
+
+.addon.eye-btn{
+  position: absolute;
+  right: var(--eye-right);
+  top: 50%;
+  transform: translateY(calc(-50% + var(--eye-offsetY)));
+  border: 0;
+  background: transparent;
+  padding: 0;
+  height: 32px;
+  width: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--eye-color);
+  transition: color .15s ease, transform .06s ease;
+}
+
+.addon.eye-btn i{
+  font-size: var(--eye-size);
+  line-height: 1;
+  opacity: .9;
+}
+
+.addon.eye-btn:hover{ color: var(--eye-color-hover); }
+.addon.eye-btn:active{ transform: translateY(calc(-50% + var(--eye-offsetY))) scale(.98); }
+
+/* garante espaço pro botão dentro do input */
+.with-addon > input[type="password"],
+.with-addon > input[type="text"]{
+  padding-right: 42px;
+}
+:root{
+  --input-px: 14px;
+  --addon-w: 40px;
+  --eye-size: 18px;
+  --eye-color: #9aa4b2;
+  --eye-color-hover: #cfd6e0;
+}
+
+/* garante label acima e espaçamento padrão */
+.form .field{ display:block; width:100%; margin-bottom:14px; }
+.form .field > label{ display:block; margin-bottom:6px; }
+
+/* novo wrapper: posiciona o olho relativo ao INPUT, não ao field */
+.field.with-addon .input-wrap{
+  position: relative;
+}
+.field.with-addon .input-wrap > input{
+  width:100%;
+  height:44px;
+  padding: 0 var(--input-px);
+  padding-right: calc(var(--input-px) + var(--addon-w));
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+/* olho centralizado DENTRO do textbox */
+.field.with-addon .input-wrap > .addon.eye-btn{
+  position: absolute;
+  right: var(--input-px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--addon-w);
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--eye-color);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color .15s ease, background .15s ease, transform .06s ease;
+}
+.field.with-addon .input-wrap > .addon.eye-btn:hover{
+  color: var(--eye-color-hover);
+  background: rgba(255,255,255,.06);
+}
+.field.with-addon .input-wrap > .addon.eye-btn i{
+  font-size: var(--eye-size);
+  line-height: 1;
+}
+/* === Normalizar altura/largura dos inputs (inclui e-mail) === */
+:root{ --input-px: 14px; } /* se já existir, mantém */
+
+.form .field > input,
+.form .field .handle-wrap input {
+  height: 44px;                 /* mesma altura do campo de senha */
+  padding: 0 var(--input-px);   /* padding lateral consistente */
+  box-sizing: border-box;
+  width: 100%;
+  border-radius: 10px;
+}
+
+/* quando houver botão-olho, garante espaço interno só nesses casos */
+.field.with-addon .input-wrap > input{
+  padding-right: calc(var(--input-px) + var(--addon-w, 40px));
+}
+
+/* por segurança, neutraliza qualquer regra antiga que encurtava inputs */
+.with-addon > input[type="text"],
+.with-addon > input[type="password"]{
+  padding-right: initial; /* será sobrescrito pelo seletor acima quando existir .input-wrap */
+}

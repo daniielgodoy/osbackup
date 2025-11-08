@@ -1,0 +1,342 @@
+:root{
+  --bg:#1b1f25; --card:#232832; --card-2:#1f2329; --div:#2e343d;
+  --text:#e0e0e0; --muted:#aeb7c1; --accent:#4db3ff;
+  --shadow:0 12px 30px rgba(0,0,0,.45);
+  --info:#2c7db8; --info-700:#1e547a;
+}
+
+.relatorios-page{
+  max-width:1200px; margin:0 auto; padding:14px 16px; color:var(--text);
+
+  --donut-dinheiro: #44A246; /* Dinheiro */
+  --donut-pix:      #4db3ff; /* Pix     */
+  --donut-credito:  #FFA500; /* Crédito */
+  --donut-debito:   #b05dd4; /* Débito  */
+}
+
+/* header fixo */
+.relatorios-header{
+  position: sticky; top: 0; z-index: 6;
+  padding: 10px 0 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--div);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.relatorios-header h1{ font-size:22px; font-weight:600; }
+
+.filters{ display:flex; gap:10px; align-items:flex-end; }
+.filters .range{ display:flex; flex-direction:column; gap:6px; }
+.filters .range label{ font-size:12px; color:var(--muted); }
+.filters .range input{
+  background:#11161d; color:var(--text); border:1px solid #2b3340;
+  border-radius:8px; padding:8px 10px;
+}
+
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  border-radius:10px; padding:9px 14px;
+  font-size:14px; font-weight:500;
+  background:#2b3038; color:var(--text);
+  border:1px solid var(--div);
+  transition: .15s ease;
+}
+.btn:hover{ filter:brightness(1.06); transform: translateY(-1px); }
+.btn.primary{
+  background: linear-gradient(180deg, var(--info) 0%, var(--info-700) 100%);
+  border-color: rgba(255,255,255,.14); color:#fff;
+  box-shadow: 0 6px 24px rgba(77,179,255,.18);
+}
+
+/* tiles */
+.report-tiles{
+  display:grid; grid-template-columns: repeat(5,1fr); gap:10px;
+  margin:12px 0 6px;
+}
+.tile{
+  display:flex; flex-direction:column; gap:8px; align-items:center; justify-content:center;
+  background: linear-gradient(180deg, #2c3139 0%, #22262e 100%);
+  color:#e8edf2; border:1px solid var(--div);
+  border-radius:12px; padding:16px 10px;
+  cursor:pointer; transition:.15s ease; min-height:86px;
+  box-shadow: 0 6px 22px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+}
+.tile i{ font-size:18px; }
+.tile span{ font-size:14px; font-weight:600; }
+.tile:hover{ transform: translateY(-2px); filter:brightness(1.06); }
+.tile.active{
+  outline:2px solid rgba(77,179,255,.35);
+  box-shadow: 0 10px 28px rgba(77,179,255,.18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* kpis */
+.kpis{
+  display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-top:10px;
+}
+.kpi-card{
+  background: var(--card); border:1px solid var(--div); border-radius:12px;
+  padding:14px 16px; box-shadow: var(--shadow);
+}
+.kpi-label{ display:block; font-size:12px; color:var(--muted); margin-bottom:8px; }
+.kpi-value{ font-size:22px; font-weight:700; }
+
+/* charts */
+.charts{
+  margin-top:12px;
+  display:grid; grid-template-columns: 1fr 1fr; gap:10px;
+}
+.chart-box{
+  background: var(--card); border:1px solid var(--div); border-radius:12px;
+  padding:12px; min-height:300px; box-shadow: var(--shadow);
+}
+.chart-box h3{ font-size:15px; font-weight:600; margin:4px 2px 10px; }
+
+/* tables */
+.tbl-wrap{
+  margin-top:12px; background:var(--card); border:1px solid var(--div);
+  border-radius:10px; overflow:hidden; box-shadow: var(--shadow); width:100%;
+}
+.tbl{ width:100%; border-collapse:collapse; table-layout: fixed; }
+.tbl thead th{
+  background:#1f252d; color:#e6ecf1; text-align:left; font-weight:600;
+  padding:10px 8px; font-size:14px; border-bottom:1px solid var(--div);
+}
+.tbl tbody td{
+  padding:10px 8px; font-size:14px; border-bottom:1px solid #2a313a;
+  color:#d7dbe0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.tbl tbody tr:nth-child(odd){ background:#232832; }
+.tbl tbody tr:nth-child(even){ background:#1f2329; }
+.tbl tbody tr:hover{ background:#2b3038; }
+.vazio{ text-align:center; padding:16px; color:#aeb7c1; }
+
+/* views */
+.view.hidden{ display:none; }
+
+@media (max-width: 1024px){
+  .report-tiles{ grid-template-columns: repeat(3,1fr); }
+  .kpis{ grid-template-columns: repeat(2,1fr); }
+  .charts{ grid-template-columns: 1fr; }
+}
+@media (max-width: 640px){
+  .report-tiles{ grid-template-columns: repeat(2,1fr); }
+}
+/* grade dos gráficos (se já existir, mantenha) */
+.charts{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* cada cartão de gráfico com altura fixa e contexto relativo */
+.chart-box{
+  position: relative;
+  background: var(--card, #232832);
+  border: 1px solid var(--div, #2e343d);
+  border-radius: 12px;
+  padding: 12px;
+  height: 360px;           /* <<< altura fixa impede “descida infinita” */
+  overflow: hidden;
+}
+
+/* título com respiro */
+.chart-box > h3{ margin: 2px 2px 10px; font-size: 14px; }
+
+/* canvas ocupa todo o espaço disponível do card */
+.chart-box canvas{
+  width: 100% !important;
+  height: calc(100% - 28px) !important; /* desconta a altura do título */
+  display: block;
+}
+
+/* responsivo: em telas menores, uma coluna só */
+@media (max-width: 900px){
+  .charts{ grid-template-columns: 1fr; }
+  .chart-box{ height: 320px; } /* pode reduzir um pouco no mobile */
+}
+/* Paleta já usada no projeto (ajuste se quiser) */
+:root{
+  --bg-1:#1b1f25; --bg-2:#232832; --bg-3:#2e343d;
+  --text:#e0e0e0; --muted:#a9b2bf; --accent:#4db3ff;
+  --stroke:#2c323c; --glow:rgba(77,179,255,.18);
+}
+
+/* header */
+.relatorios-header{ display:flex; flex-direction:column; gap:14px; }
+.relatorios-header h1{ margin:8px 0 2px; }
+
+/* toolbar */
+.filters-toolbar{
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--bg-2); border:1px solid var(--stroke);
+  padding:10px 12px; border-radius:14px; box-shadow:0 6px 22px var(--glow);
+  gap:14px; flex-wrap:wrap;
+}
+.filters-toolbar .left{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.filters-toolbar .right{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.filters-toolbar .split{ width:1px; height:26px; background:var(--stroke); margin:0 4px; }
+
+.presets{ display:flex; gap:6px; }
+.btn.preset{ background:var(--bg-3); border:1px solid var(--stroke); }
+.btn.preset:hover{ border-color:var(--accent); }
+
+.date-pickers{ display:flex; align-items:center; gap:8px; }
+.date-pickers .input{ display:flex; align-items:center; gap:8px;
+  background:var(--bg-3); border:1px solid var(--stroke); padding:6px 10px; border-radius:10px; }
+.date-pickers .input input{ background:transparent; border:0; color:var(--text); outline:none; }
+.sep{ color:var(--muted); }
+
+/* avançados */
+#filtrosAvancados{
+  background:var(--bg-2); border:1px dashed var(--stroke);
+  border-radius:14px; padding:12px; transition:height .2s ease, padding .2s ease;
+}
+#filtrosAvancados.collapsed{ display:none; }
+#filtrosAvancados .grid{
+  display:grid; gap:12px; grid-template-columns: repeat(12, 1fr);
+}
+#filtrosAvancados .field{ grid-column: span 4; display:flex; flex-direction:column; gap:8px; }
+#filtrosAvancados .field.two{ grid-column: span 4; }
+#filtrosAvancados .row{ display:flex; align-items:center; gap:8px; }
+#filtrosAvancados label{ font-size:.9rem; color:var(--muted); }
+
+.chip-group{ display:flex; gap:6px; flex-wrap:wrap; }
+.chip{ background:#2b3038; border:1px solid #2e343d; color:var(--text);
+  padding:6px 10px; border-radius:16px; cursor:pointer; }
+.chip.on{ outline:2px solid var(--accent); }
+.chip-clear{ background:transparent; border:1px dashed var(--stroke); color:var(--muted); }
+
+.checks{ display:flex; gap:12px; flex-wrap:wrap; }
+.inline{ display:flex; align-items:center; gap:8px; }
+
+/* botões base (herdam do seu tema) */
+.btn{ padding:7px 10px; border-radius:10px; border:1px solid var(--stroke); background:var(--bg-3); color:var(--text); }
+.btn.primary{ background:linear-gradient(#2b7fd6,#2272c4); border-color:#1f68b3; box-shadow:0 6px 16px rgba(77,179,255,.25); }
+.btn.ghost{ background:var(--bg-2); }
+.btn.outline{ background:transparent; border:1px solid var(--accent); color:var(--accent); }
+.btn i{ margin-right:6px; }
+.btn .caret{ margin:0 0 0 6px; }
+
+/* responsivo */
+@media (max-width: 980px){
+  #filtrosAvancados .field{ grid-column: span 6; }
+}
+@media (max-width: 640px){
+  .filters-toolbar .right .btn span{ display:none; } /* deixa só os ícones */
+  #filtrosAvancados .field{ grid-column: 1 / -1; }
+}
+/* === LIGHT THEME === */
+html[data-theme="light"]{
+  --bg:#f3f5f9; --card:#f8f9fc; --card-2:#eef1f6; --div:rgba(15,23,42,.12);
+  --text:#0f172a; --muted:#475569; --accent:#2b68ff;
+  --shadow:0 10px 28px rgba(2,6,23,.10);
+  --info:#2b68ff; --info-700:#2352d6;
+}
+html[data-theme="light"] .relatorios-page{ color:var(--text); }
+
+html[data-theme="light"] .relatorios-header{
+  background: var(--bg); border-bottom:1px solid var(--div);
+}
+html[data-theme="light"] .filters .range input{
+  background:#eef2f7; color:#0f172a; border:1px solid rgba(15,23,42,.18);
+}
+
+html[data-theme="light"] .tile{
+  background: linear-gradient(180deg, #f1f4fb 0%, #e9edf5 100%);
+  color:#0f172a; border:1px solid var(--div); box-shadow: var(--shadow);
+}
+html[data-theme="light"] .kpi-card,
+html[data-theme="light"] .chart-box{ background:var(--card); border:1px solid var(--div); box-shadow: var(--shadow); }
+
+html[data-theme="light"] .tbl-wrap{ background:var(--card); border:1px solid var(--div); }
+html[data-theme="light"] .tbl thead th{ background:#e7ebf3; color:#0f172a; border-bottom:1px solid var(--div); }
+html[data-theme="light"] .tbl tbody td{ color:#1f2937; border-bottom:1px solid rgba(15,23,42,.1); }
+html[data-theme="light"] .tbl tbody tr:nth-child(odd){ background:#f8f9fc; }
+html[data-theme="light"] .tbl tbody tr:nth-child(even){ background:#eef1f6; }
+html[data-theme="light"] .tbl tbody tr:hover{ background:#e7ecf6; }
+
+html[data-theme="light"] .filters-toolbar{
+  background:#ffffff; border:1px solid var(--div);
+  box-shadow: 0 6px 22px rgba(2,6,23,.08);
+}
+html[data-theme="light"] .btn{ background:#e9edf3; color:#0f172a; border:1px solid var(--div); }
+html[data-theme="light"] .btn.primary{
+  background:linear-gradient(180deg,#2b68ff,#2352d6); color:#fff; border:none;
+  box-shadow:0 6px 20px rgba(43,104,255,.20);
+}
+/* Remover/escurecer o brilho branco da toolbar no DARK */
+html:not([data-theme="light"]) .filters-toolbar{
+  /* escolha 1: sem sombra */
+  /* box-shadow: none !important; */
+
+  /* escolha 2 (recomendada): sombra escura discreta */
+  box-shadow: 0 8px 22px rgba(0,0,0,.35) !important;
+  border: 1px solid var(--stroke) !important;
+}
+
+/* Botões “ghost” dentro da toolbar sem brilho claro no hover */
+html:not([data-theme="light"]) .filters-toolbar .btn.ghost,
+html:not([data-theme="light"]) .filters-toolbar .btn.preset{
+  box-shadow: none !important;
+}
+html:not([data-theme="light"]) .filters-toolbar .btn.primary{
+  /* deixa o destaque do botão principal sem halo esbranquiçado */
+  box-shadow: 0 6px 16px rgba(0,0,0,.25) !important;
+}
+
+/* (opcional) mate qualquer brilho azul herdado da var --glow só dentro da página de relatórios */
+html:not([data-theme="light"]) .relatorios-page{
+  --glow: rgba(0,0,0,0) !important;
+}
+/* ==== LIGHT: Filtros avançados claros ==== */
+html[data-theme="light"] #filtrosAvancados{
+  background: #f8f9fc !important;
+  border: 1px dashed rgba(15,23,42,.18) !important;
+  box-shadow: 0 6px 18px rgba(2,6,23,.06);
+}
+html[data-theme="light"] #filtrosAvancados .grid{ gap: 12px; }
+html[data-theme="light"] #filtrosAvancados .field label{
+  color: #475569 !important;
+}
+
+/* Inputs e selects */
+html[data-theme="light"] #filtrosAvancados input[type="text"],
+html[data-theme="light"] #filtrosAvancados input[type="number"],
+html[data-theme="light"] #filtrosAvancados select{
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15,23,42,.18) !important;
+  border-radius: 10px;
+  padding: 8px 10px;
+  outline: none;
+}
+html[data-theme="light"] #filtrosAvancados input::placeholder{
+  color: #94a3b8;
+}
+html[data-theme="light"] #filtrosAvancados .sep{
+  color: #94a3b8;
+}
+
+/* Chips (Status) */
+html[data-theme="light"] #filtrosAvancados .chip{
+  background: #eef2f7 !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(15,23,42,.18) !important;
+}
+html[data-theme="light"] #filtrosAvancados .chip:hover{
+  filter: brightness(1.03);
+}
+html[data-theme="light"] #filtrosAvancados .chip.on{
+  outline: 2px solid var(--accent);
+  background: #e7efff;
+}
+html[data-theme="light"] #filtrosAvancados .chip-clear{
+  background: transparent !important;
+  color: #64748b !important;
+  border: 1px dashed rgba(15,23,42,.28) !important;
+}
+
+/* Checkboxes e linha inline */
+html[data-theme="light"] #filtrosAvancados .checks label,
+html[data-theme="light"] #filtrosAvancados .inline{
+  color: #0f172a;
+}

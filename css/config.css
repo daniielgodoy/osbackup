@@ -1,0 +1,261 @@
+:root{
+  --bg:#1b1f25; --card:#232832; --card-2:#1f2329; --div:#2e343d;
+  --text:#e0e0e0; --muted:#aeb7c1; --accent:#4db3ff;
+  --success:#2ecc71; --danger:#e74c3c; --info:#3498db;
+  --shadow:0 12px 30px rgba(0,0,0,.35);
+}
+
+.config-page{ max-width:1200px; margin:0 auto; padding:16px; color:var(--text); }
+.config-header{ position:sticky; top:0; background:var(--bg); z-index:6; padding:10px 0 12px; border-bottom:1px solid var(--div); display:flex; align-items:center; justify-content:space-between; }
+.config-header h1{ font-size:22px; font-weight:600; }
+.header-actions{ display:flex; gap:8px; }
+
+.btn{ display:inline-flex; align-items:center; gap:8px; padding:9px 12px; border-radius:10px; border:1px solid var(--div); background:#2b3038; color:var(--text); cursor:pointer; transition:.2s; }
+.btn:hover{ filter:brightness(1.06); transform:translateY(-1px);}
+.btn.primary{ background: linear-gradient(180deg, #2c7db8 0%, #1e547a 100%); color:#fff; border-color:rgba(255,255,255,.14); box-shadow:0 6px 24px rgba(77,179,255,.18);}
+.btn.outline{ background:transparent; }
+.btn.danger{ background: linear-gradient(180deg, var(--danger) 0%, #c0392b 100%); color:#fff; border-color:rgba(255,255,255,.14); }
+
+.config-grid{ display:grid; grid-template-columns:1fr; gap:16px; margin-top:12px; }
+.card{ background:linear-gradient(180deg,#262b35 0%, #1f232b 100%); border:1px solid var(--div); border-radius:14px; padding:16px; box-shadow: var(--shadow), 0 0 0 1px rgba(255,255,255,.03) inset; }
+.card h2{ font-size:18px; font-weight:600; margin:0 0 12px; padding-bottom:8px; border-bottom:1px dashed rgba(255,255,255,.1); }
+
+.grid-2{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-bottom:10px; }
+.grid-3{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.kit{ background:var(--card-2); border:1px solid var(--div); border-radius:10px; padding:12px; }
+
+label{ display:block; font-size:12px; color:var(--muted); margin:0 2px 8px; }
+input[type="text"], input[type="email"], input[type="tel"], input[type="password"], select{
+  width:100%; height:42px; padding:10px 12px; border-radius:10px; background:#11161d; color:var(--text); border:1px solid #2b3340; transition:.2s;
+}
+input:focus, select:focus{ outline:none; border-color:rgba(77,179,255,.65); box-shadow:0 0 0 3px rgba(77,179,255,.18); background:#0f141b; }
+.help{ color:#b9c3cf; font-size:12px; margin-top:6px; }
+
+.row{ display:flex; align-items:center; gap:10px; }
+.row.gap{ gap:8px; }
+.row.between{ justify-content:space-between; width:100%; }
+.actions{ display:flex; gap:8px; margin-top:10px; }
+.actions.vertical{ flex-direction:column; align-items:flex-start; gap:8px; }
+
+.list{ background:var(--card-2); border:1px solid var(--div); border-radius:10px; padding:8px; display:flex; flex-direction:column; gap:8px; }
+.list.small .row{ padding:6px 8px; background:#20242b; border:1px solid #2a313a; border-radius:8px; }
+.list.compact .row{ padding:10px 12px; background:#20242b; border:1px solid #2a313a; border-radius:8px; }
+.muted{ color:#b9c3cf; }
+.small{ font-size:12px; }
+.big{ font-size:16px; font-weight:600; }
+
+.avatar-row{ display:flex; align-items:center; gap:12px; }
+.avatar{ width:96px; height:96px; border-radius:50%; border:2px solid var(--div); object-fit:cover; background:#11161d; }
+
+.at-prefix{ background:#11161d; border:1px solid #2b3340; border-right:none; padding:10px 12px; border-radius:10px 0 0 10px; }
+.row .at-prefix + input{ border-radius:0 10px 10px 0; }
+
+.switch{ display:flex; align-items:center; gap:8px; }
+
+.tag{ background:#2b3038; border:1px solid var(--div); padding:2px 6px; border-radius:6px; font-size:12px; margin-left:6px; }
+
+@media (max-width: 900px){
+  .grid-2{ grid-template-columns:1fr; }
+  .grid-3{ grid-template-columns:1fr; }
+}
+/* === LIGHT THEME === */
+html[data-theme="light"]{
+  --bg:#f3f5f9; --card:#f8f9fc; --card-2:#eef1f6; --div:rgba(15,23,42,.12);
+  --text:#0f172a; --muted:#475569; --accent:#2b68ff;
+  --shadow:0 10px 28px rgba(2,6,23,.10);
+}
+html[data-theme="light"] .config-page{ color:var(--text); }
+html[data-theme="light"] .config-header{ background:var(--bg); border-bottom:1px solid var(--div); }
+
+html[data-theme="light"] .card{
+  background: var(--card);
+  border:1px solid var(--div);
+  box-shadow: var(--shadow);
+}
+html[data-theme="light"] .kit,
+html[data-theme="light"] .list{ background: var(--card-2); border:1px solid var(--div); }
+html[data-theme="light"] .list.small .row,
+html[data-theme="light"] .list.compact .row{ background:#e7ebf3; border-color: rgba(15,23,42,.12); }
+
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="tel"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] select{
+  background:#eef2f7; color:#0f172a; border:1px solid rgba(15,23,42,.18);
+}
+html[data-theme="light"] input:focus,
+html[data-theme="light"] select:focus{
+  border-color: rgba(43,104,255,.55);
+  box-shadow: 0 0 0 3px rgba(43,104,255,.18);
+  background:#e9eef6;
+}
+
+html[data-theme="light"] .btn{ background:#e9edf3; color:#0f172a; border:1px solid var(--div); }
+html[data-theme="light"] .btn.primary{
+  background:linear-gradient(180deg,#2b68ff 0%, #2352d6 100%);
+  color:#fff; border: none; box-shadow:0 6px 20px rgba(43,104,255,.20);
+}
+html[data-theme="light"] .btn.outline{ background:transparent; }
+/* Empurra só a coluna da FOTO para a direita (desktop) */
+@media (min-width: 901px){
+  .grid-2 > div:nth-child(2):has(#avatarPreview){
+    margin-left: 28px;          /* ajuste fino aqui (20–40px) */
+  }
+}
+
+/* Fallback para navegadores sem :has() */
+@supports not(selector(:has(*))) {
+  @media (min-width: 901px){
+    .avatar-row{ 
+      margin-left: 28px;        /* mesmo recuo, afeta só a área da foto */
+    }
+  }
+}
+/* ===== Perfil: alinhar "Nome" com o bloco @handle e remover bordas fantasma ===== */
+
+.card:has(#handle){
+  /* ajuste fino do layout do handle */
+  --handle-prefix-w: 48px;  /* largura da caixinha "@" */
+  --handle-gap: 10px;       /* gap entre @ e input */
+  --field-h: 42px;          /* altura padrão dos inputs */
+}
+
+/* 1) Nome com a MESMA largura visual do bloco com @handle */
+.card:has(#handle) #nome{
+  max-width: calc(100% - var(--handle-prefix-w) - var(--handle-gap));
+}
+
+/* 2) Transforma o bloco do handle em UM campo só (sem “linhas” internas) */
+.card:has(#handle) .row:has(.at-prefix + #handle){
+  background: #11161d;
+  border: 1px solid #2b3340;
+  border-radius: 10px;
+  padding: 0;                 /* o container vira a “caixa” */
+  height: var(--field-h);
+  gap: 0;                     /* sem gap interno, a divisão vem do border-right */
+  overflow: hidden;           /* arredondado perfeito */
+}
+
+/* caixinha "@" fixa, sem borda própria */
+.card:has(#handle) .row:has(.at-prefix + #handle) .at-prefix{
+  width: var(--handle-prefix-w);
+  min-width: var(--handle-prefix-w);
+  height: var(--field-h);
+  display: inline-flex;
+  align-items: center; 
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-right: 1px solid #2b3340;  /* separador sutil */
+  padding: 0;
+  border-radius: 0;
+}
+
+/* input do handle sem borda, fundo transparente dentro do container */
+.card:has(#handle) .row:has(.at-prefix + #handle) #handle{
+  border: none;
+  background: transparent;
+  height: var(--field-h);
+  line-height: var(--field-h);
+  padding: 0 12px;
+  border-radius: 0;
+  width: 100%;
+  box-shadow: none;
+}
+
+/* foco bonito */
+.card:has(#handle) .row:has(.at-prefix + #handle):focus-within{
+  border-color: rgba(77,179,255,.65);
+  box-shadow: 0 0 0 3px rgba(77,179,255,.18);
+}
+
+/* 3) LIGHT THEME — mesmos ajustes, cores claras */
+html[data-theme="light"] .card:has(#handle) .row:has(.at-prefix + #handle){
+  background: #eef2f7;
+  border-color: rgba(15,23,42,.18);
+}
+html[data-theme="light"] .card:has(#handle) .row:has(.at-prefix + #handle) .at-prefix{
+  border-right-color: rgba(15,23,42,.18);
+}
+html[data-theme="light"] .card:has(#handle) .row:has(.at-prefix + #handle):focus-within{
+  border-color: rgba(43,104,255,.55);
+  box-shadow: 0 0 0 3px rgba(43,104,255,.18);
+}
+
+/* 4) Responsivo: no mobile, Nome pode ocupar 100% */
+@media (max-width: 900px){
+  .card:has(#handle) #nome{ max-width: 100%; }
+}
+/* ===== Perfil: mesma largura e altura para "Nome" e bloco @handle ===== */
+.card:has(#handle){
+  /* medidas finas */
+  --handle-prefix-w: 48px;                  /* largura da caixinha @ */
+  --handle-gap: 10px;                       /* espaço entre @ e input */
+  --profile-h: 38px;                        /* altura final desejada (36–40 ok) */
+  --profile-w: calc(100% - var(--handle-prefix-w) - var(--handle-gap));
+}
+
+/* LARGURA: os dois batem exatamente */
+.card:has(#handle) #nome,
+.card:has(#handle) .row:has(.at-prefix + #handle){
+  width: var(--profile-w);
+  max-width: var(--profile-w);
+  box-sizing: border-box;
+}
+
+/* ALTURA: igual pros dois */
+.card:has(#handle) #nome{
+  height: var(--profile-h);
+  line-height: var(--profile-h);
+  padding-top: 0; padding-bottom: 0;        /* tira “gordura” vertical */
+}
+
+/* o bloco do handle já é o container do campo */
+.card:has(#handle) .row:has(.at-prefix + #handle){
+  height: var(--profile-h);
+  padding: 0;                               
+  gap: 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* caixinha @ e input interno ocupam 100% da altura */
+.card:has(#handle) .row:has(.at-prefix + #handle) .at-prefix{
+  width: var(--handle-prefix-w);
+  min-width: var(--handle-prefix-w);
+  height: 100%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-right: 1px solid #2b3340;
+  padding: 0;
+}
+.card:has(#handle) .row:has(.at-prefix + #handle) #handle{
+  height: 100%;
+  line-height: var(--profile-h);
+  padding: 0 12px;
+  border: none; background: transparent; border-radius: 0;
+  box-shadow: none;
+}
+
+/* Foco consistente */
+.card:has(#handle) .row:has(.at-prefix + #handle):focus-within{
+  border-color: rgba(77,179,255,.65);
+  box-shadow: 0 0 0 3px rgba(77,179,255,.18);
+}
+
+/* LIGHT THEME ajustes sutis (mantém o que você já tem) */
+html[data-theme="light"] .card:has(#handle) .row:has(.at-prefix + #handle){
+  border-color: rgba(15,23,42,.18);
+}
+html[data-theme="light"] .card:has(#handle) .row:has(.at-prefix + #handle) .at-prefix{
+  border-right-color: rgba(15,23,42,.18);
+}
+
+/* Mobile: volta tudo a 100% de largura */
+@media (max-width: 900px){
+  .card:has(#handle) #nome,
+  .card:has(#handle) .row:has(.at-prefix + #handle){
+    width: 100%;
+    max-width: 100%;
+  }
+}

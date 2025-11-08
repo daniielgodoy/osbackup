@@ -1,0 +1,400 @@
+/* ===============================
+   THEME TOKENS (Dark / Light)
+   Usa atributo data-theme no <html> (documentElement)
+   =============================== */
+
+/* ----- DARK (padrão legacy) ----- */
+:root,
+:root[data-theme="dark"] {
+  --bg:            #1b1f25;
+  --bg-elev:       #232832;
+  --bg-soft:       #2e343d;
+  --surface:       #232832;
+  --card:          #232832;
+  --muted:         #aeb4bf;
+  --text:          #e0e0e0;
+  --text-muted:    #b9c0cb;
+  --border:        #303846;
+  --shadow:        0 8px 24px rgba(0,0,0,.35);
+
+  --primary:       #4db3ff;
+  --primary-700:   #3e92d1;
+  --danger:        #ff5f74;
+  --success:       #37d67a;
+  --warning:       #f6c350;
+
+  --input-bg:      var(--bg-soft);
+  --input-text:    var(--text);
+  --input-border:  #3a4251;
+  --input-placeholder: #9aa3af;
+
+  --table-stripe:  rgba(255,255,255,.03);
+  --hover:         rgba(255,255,255,.06);
+
+  --scrollbar:     #4a5363;
+  --scrollbar-track:#2a303a;
+
+  --canvas-bg:     transparent; /* em dark deixamos transparente */
+}
+
+/* ----- LIGHT (cinza claro suave) ----- */
+:root[data-theme="light"] {
+  --bg:            #f2f4f7;   /* cinza claro */
+  --bg-elev:       #ffffff;   /* superfícies elevadas */
+  --bg-soft:       #eef1f5;   /* áreas brandas (inputs, listas) */
+  --surface:       #ffffff;
+  --card:          #ffffff;
+  --muted:         #6b7280;
+  --text:          #1f2937;   /* cinza 800 */
+  --text-muted:    #4b5563;   /* cinza 600 */
+  --border:        #e5e7eb;   /* cinza 200 */
+  --shadow:        0 8px 24px rgba(28,34,40,.08);
+
+  --primary:       #4db3ff;
+  --primary-700:   #3e92d1;
+  --danger:        #e11d48;
+  --success:       #16a34a;
+  --warning:       #ca8a04;
+
+  --input-bg:      #f8fafc;
+  --input-text:    #111827;
+  --input-border:  #d1d5db;
+  --input-placeholder: #9ca3af;
+
+  --table-stripe:  rgba(0,0,0,.035);
+  --hover:         rgba(0,0,0,.06);
+
+  --scrollbar:     #c7ccd6;
+  --scrollbar-track:#eef1f5;
+
+  --canvas-bg:     #ffffff; /* canvas/janelas gráficas em claro */
+}
+
+/* ===============================
+   BASE (aplica tokens globalmente)
+   =============================== */
+html, body {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+body, .content, .main, .page, .wrapper {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Texto & estados */
+.muted, .small, .help, .subtitle, .description { color: var(--text-muted) !important; }
+
+/* Links e primários */
+a, .link { color: var(--primary) !important; }
+a:hover, .link:hover { color: var(--primary-700) !important; }
+
+/* ===============================
+   LAYOUTS COMUNS (forçar claro)
+   =============================== */
+.navbar, .topbar, header.nav, .appbar {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+.sidebar, .sidenav, .leftbar, .rightbar {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-right: 1px solid var(--border) !important;
+}
+
+/* Cards / kits / widgets */
+.card, .kit, .widget, .panel, .box, .tile, .stat, .list-card {
+  background: var(--card) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* Seções grid */
+.config-page, .config-grid, .grid-layout, .main-column, .side-column {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Listagens / linhas padrão */
+.list, .row, .item, .list.compact, .list.small {
+  background: var(--bg-elev) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Tabelas */
+table, .table, .data-table {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+table th, .table th {
+  background: var(--bg-soft) !important;
+  color: var(--text-muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+table td, .table td {
+  border-bottom: 1px solid var(--border) !important;
+}
+table tr:nth-child(odd) td, .table tr:nth-child(odd) td {
+  background: var(--table-stripe) !important;
+}
+
+/* Inputs/Selects/Textareas */
+input[type="text"], input[type="email"], input[type="tel"], input[type="password"],
+input[type="number"], input[type="search"], select, textarea,
+.input, .select, .textarea {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border: 1px solid var(--input-border) !important;
+  outline: none !important;
+}
+input::placeholder, textarea::placeholder { color: var(--input-placeholder) !important; }
+input:focus, select:focus, textarea:focus,
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+
+/* Switch/checkbox básicos (se aplicável) */
+.switch input:checked + span,
+input[type="checkbox"]:checked {
+  accent-color: var(--primary) !important;
+}
+
+/* Botões */
+.btn, button, .button {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+.btn.primary { background: var(--primary) !important; color: #0b1a23 !important; border-color: var(--primary) !important; }
+.btn.primary:hover { background: var(--primary-700) !important; }
+.btn.outline { background: transparent !important; color: var(--text) !important; border-color: var(--input-border) !important; }
+.btn.danger { background: var(--danger) !important; color: #fff !important; border-color: var(--danger) !important; }
+
+/* Modais / dropdowns / tooltips / menus */
+.modal, .modal-content, .dropdown, .dropdown-menu, .tooltip, .popover, .context, .menu {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* Badges, pills, tags */
+.badge, .pill, .tag {
+  background: var(--bg-soft) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Campos especiais */
+.at-prefix { background: var(--bg-soft) !important; color: var(--text-muted) !important; border: 1px solid var(--border) !important; }
+
+/* Hover genérico */
+.hoverable:hover, .list .row:hover, .table tr:hover td { background: var(--hover) !important; }
+
+/* ===============================
+   CANVAS / CHARTS
+   =============================== */
+canvas, .chart, .chartjs-render-monitor {
+  background: var(--canvas-bg) !important;
+}
+
+/* ===============================
+   SCROLLBARS (WebKit)
+   =============================== */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--scrollbar) !important; border-radius: 8px; }
+*::-webkit-scrollbar-track { background: var(--scrollbar-track) !important; }
+
+/* ===============================
+   ÍCONES (se forem SVG herdam cor)
+   =============================== */
+svg, i[class^="fa-"], i[class*=" fa-"] { color: currentColor !important; }
+
+/* ===============================
+   “KILL SWITCH” para hex escurões herdados
+   (caso algum CSS antigo imponha #1b1f25/#232832/#2e343d)
+   =============================== */
+:root[data-theme="light"] .force-light,
+:root[data-theme="light"] .navbar,
+:root[data-theme="light"] .sidebar,
+:root[data-theme="light"] .card,
+:root[data-theme="light"] .modal,
+:root[data-theme="light"] .list,
+:root[data-theme="light"] .table,
+:root[data-theme="light"] .kit,
+:root[data-theme="light"] .widget,
+:root[data-theme="light"] .panel,
+:root[data-theme="light"] .box,
+:root[data-theme="light"] .tile,
+:root[data-theme="light"] .content,
+:root[data-theme="light"] .main-column,
+:root[data-theme="light"] .side-column {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* Borda/sombra para inputs dentro de cards escurecidos */
+:root[data-theme="light"] .card input,
+:root[data-theme="light"] .card select,
+:root[data-theme="light"] .card textarea {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+/* Títulos */
+h1,h2,h3,h4,h5 { color: var(--text) !important; }
+/* ===== Corrige link global muito amplo ===== */
+/* Escopo padrão só no conteúdo; a navbar ganha regras próprias abaixo */
+.main, .content, .page, .wrapper {
+  --link-fg: var(--primary);
+}
+.main a, .content a, .page a, .wrapper a,
+.main .link, .content .link, .page .link, .wrapper .link {
+  color: var(--link-fg) !important;
+}
+.main a:hover, .content a:hover, .page a:hover, .wrapper a:hover {
+  color: var(--primary-700) !important;
+}
+
+/* ===== Navbar: cores por tema, sem “tudo azul” ===== */
+.navbar, header.nav, .appbar {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+/* Itens da navbar em estado normal */
+.navbar a, .navbar .nav-center a, .navbar .brand, .navbar .icon-btn {
+  color: color-mix(in srgb, var(--text) 88%, transparent) !important; /* texto principal neutro */
+  border-color: color-mix(in srgb, var(--border) 100%, transparent) !important;
+}
+
+/* Hover/active com acento, mas sem poluir tudo */
+.navbar a:hover, .navbar .nav-center li:hover > a {
+  color: var(--primary) !important;
+}
+.navbar .nav-center li.active > a {
+  color: var(--primary) !important;
+  font-weight: 600;
+}
+.navbar .nav-center li.active::after {
+  background: linear-gradient(90deg, #79a9ff, #5ec3ff) !important;
+}
+
+/* Ícones da navbar (mantém legível no dark) */
+.navbar .icon-btn {
+  background: transparent !important;
+  color: color-mix(in srgb, var(--text) 75%, transparent) !important;
+}
+.navbar .icon-btn:hover {
+  color: var(--primary) !important;
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border)) !important;
+}
+
+/* Tema dark: reforça contraste de borda e fundo */
+:root[data-theme="dark"] .navbar {
+  background: #121417 !important;
+  border-bottom-color: #24282e !important;
+}
+
+/* Tema light: cinza claro sem branco estourado */
+:root[data-theme="light"] .navbar {
+  background: #ffffff !important;
+  border-bottom-color: #e5e7eb !important;
+}
+:root[data-theme="light"] .navbar a,
+:root[data-theme="light"] .navbar .icon-btn {
+  color: #1f2937 !important; /* cinza 800 */
+}
+
+/* ===== Contrast fixes gerais (light e dark) ===== */
+
+/* Botões ghost/outlines: aumentar leitura */
+.btn.ghost, .btn.outline, .btn-ghost {
+  background: transparent !important;
+  color: var(--text) !important;
+  border: 1px solid color-mix(in srgb, var(--border) 100%, transparent) !important;
+}
+.btn.ghost:hover, .btn.outline:hover, .btn-ghost:hover {
+  background: color-mix(in srgb, var(--bg-soft) 65%, transparent) !important;
+}
+
+/* Inputs mais legíveis */
+input[type="text"], input[type="email"], input[type="tel"], input[type="password"],
+input[type="number"], input[type="search"], select, textarea {
+  background: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border: 1px solid var(--input-border) !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+
+/* Tabelas: cabeçalho e listrado mais claros no light e mais definidos no dark */
+table, .table, .tbl {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+table thead th, .table thead th, .tbl thead th {
+  background: var(--bg-soft) !important;
+  color: color-mix(in srgb, var(--text) 80%, transparent) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+table tbody tr:nth-child(odd) td,
+.table tbody tr:nth-child(odd) td,
+.tbl tbody tr:nth-child(odd) {
+  background: var(--table-stripe) !important;
+}
+
+/* Cards/listas herdando escuro fixo — força superfície do tema */
+.card, .kit, .widget, .panel, .box, .tile, .list, .tbl-wrap, .chart-box, .servicos-card {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Chips/tags: menos “apagados” */
+.tag, .chip, .chips label {
+  background: color-mix(in srgb, var(--bg-soft) 80%, transparent) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+
+/* Select de status (você usa bastante) */
+.status-select {
+  background: color-mix(in srgb, var(--bg-soft) 90%, transparent) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+.status-select:hover { filter: brightness(1.04) !important; }
+
+/* Modal overlay e cartão dentro */
+.modal { background: color-mix(in srgb, #000 55%, transparent) !important; }
+.modal .modal-body, .modal-content {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* Scrollbar mais visível no light */
+:root[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: #c7ccd6 !important;
+}
+:root[data-theme="light"] *::-webkit-scrollbar-track {
+  background: #eef1f5 !important;
+}
