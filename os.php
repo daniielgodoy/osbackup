@@ -1,6 +1,6 @@
 <?php
 /* ===========================================================================
- * os.php — Lista, filtro, paginação AJAX e modais de Visualizar/Editar OS
+ * os.php — Lista, filtro, paginação AJAX e modal de Visualizar/Editar OS
  * Requisitos externos:
  *   - includes/auth_guard.php  => require_tenant(), current_shop_id()
  *   - includes/mysqli.php      => $conn (mysqli)
@@ -49,8 +49,6 @@ $statusRaw  = $Q['status'] ?? ($Q['status[]'] ?? []);
 if (!is_array($statusRaw)) $statusRaw = [$statusRaw];
 $statusArr  = array_values(array_filter($statusRaw, fn($s)=>$s!==''));
 
-$pago       = trim($Q['pago'] ?? '');
-$metodo     = trim($Q['metodo_pagamento'] ?? '');
 $data_ini   = trim($Q['data_ini'] ?? '');
 $data_fim   = trim($Q['data_fim'] ?? '');
 $valor_min  = trim($Q['valor_min'] ?? '');
@@ -71,7 +69,7 @@ if (!is_null($shop_id)) {
   $args[]  = $shop_id;
 }
 
-/* ID único ou faixa */
+/* Helper QS base */
 if (!function_exists('build_base_qs')) {
   function build_base_qs(array $Q): string {
     $keep = $Q;
@@ -81,6 +79,7 @@ if (!function_exists('build_base_qs')) {
 }
 $base_qs = build_base_qs($Q);
 
+/* ID único ou faixa */
 if ($ids !== '') {
   if (preg_match('~^\s*(\d+)\s*-\s*(\d+)\s*$~', $ids, $m)) {
     $a = (int)$m[1]; $b = (int)$m[2];
@@ -119,20 +118,6 @@ if (is_array($statusArr) && count($statusArr)>0) {
     $types  .= str_repeat('s', count($statusArr));
     $args    = array_merge($args, $statusArr);
   }
-}
-
-/* Pago: 1/0 (compatível com registros antigos) */
-if ($pago === '1' || $pago === '0') {
-  $where[] = "(COALESCE(pago,0) > 0) = ?";
-  $types  .= 'i';
-  $args[]  = (int)$pago;
-}
-
-/* Método de pagamento */
-if ($metodo !== '') {
-  $where[] = "COALESCE(metodo_pagamento,'') = ?";
-  $types  .= 's';
-  $args[]  = $metodo;
 }
 
 /* Data de entrada (intervalo) */
@@ -194,7 +179,9 @@ $total_pages = max(1, (int)ceil($total_rows / max(1,$per_page)));
 if ($offset >= $total_rows && $total_rows > 0) { $page = 1; $offset = 0; }
 
 /* ======== CONSULTA PRINCIPAL ======== */
-$sql = "SELECT id, nome, modelo, servico, observacao, data_entrada, hora_entrada, valor_total, metodo_pagamento, pago, status
+/* Continua selecionando metodo_pagamento e pago para lógica interna */
+$sql = "SELECT id, nome, modelo, servico, observacao, data_entrada, hora_entrada,
+               valor_total, metodo_pagamento, pago, status
         FROM ordens_servico
         $where_sql
         ORDER BY id DESC
@@ -207,7 +194,9 @@ if ($types) {
 } else {
   $stmt->bind_param('ii', $per_page, $offset);
 }
-$stmt->execute(); $res = $stmt->get_result(); $rows = $res->fetch_all(MYSQLI_ASSOC);
+$stmt->execute();
+$res  = $stmt->get_result();
+$rows = $res->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
 /* ======== HELPERS DE RENDER ======== */
@@ -230,20 +219,26 @@ if (!function_exists('statusColor')) {
 if (!function_exists('render_list')) {
   function render_list($rows){
     ob_start();
-    if(!$rows){
+    if (!$rows) {
       echo '<p class="vazio">Nenhuma ordem encontrada.</p>';
     } else {
       foreach($rows as $r){
         $cor = statusColor($r['status'] ?? '');
+        $pagoFlag  = (float)($r['pago'] ?? 0) > 0;
+        $pagoTexto = $pagoFlag ? '✅ Sim' : '❌ Não';
         ?>
-        <div class="os-card" data-id="<?= (int)$r['id'] ?>">
+        <div class="os-card"
+             data-id="<?= (int)$r['id'] ?>"
+             data-pago="<?= $pagoFlag ? 1 : 0 ?>"
+             data-metodo="<?= htmlspecialchars($r['metodo_pagamento'] ?? '', ENT_QUOTES) ?>"
+             data-valor-total="<?= htmlspecialchars($r['valor_total'] ?? 0, ENT_QUOTES) ?>">
           <div class="os-left">
             <span class="os-id">#<?= str_pad($r['id'],5,'0',STR_PAD_LEFT) ?></span>
             <h2><?= htmlspecialchars($r['nome'] ?: 'Sem nome') ?></h2>
             <p><strong>Modelo:</strong> <?= htmlspecialchars($r['modelo'] ?: '-') ?></p>
             <p><strong>Serviço:</strong> <?= htmlspecialchars($r['servico'] ?: '-') ?></p>
             <?php if(!empty($r['observacao'])): ?>
-            <p class="obs"><strong>Obs:</strong> <?= htmlspecialchars($r['observacao']) ?></p>
+              <p class="obs"><strong>Obs:</strong> <?= htmlspecialchars($r['observacao']) ?></p>
             <?php endif; ?>
           </div>
           <div class="os-right">
@@ -251,19 +246,25 @@ if (!function_exists('render_list')) {
               <?= ucfirst(str_replace('_',' ',$r['status'])) ?>
             </div>
             <div class="infos">
-              <span><strong>Data:</strong> <?= htmlspecialchars(date('d/m/Y', strtotime($r['data_entrada']))) ?></span>
-              <span><strong>Hora:</strong> <?= htmlspecialchars(substr($r['hora_entrada'],0,5)) ?></span>
-              <?php
-                $pagoTexto = ((float)$r['pago'] > 0)
-                  ? '✅ Sim (' . brl($r['valor_total']) . ')'
-                  : '❌ Não';
-              ?>
-              <span><strong>Pago:</strong> <?= $pagoTexto ?></span>
+              <span class="info-data"><strong>Data:</strong> <?= htmlspecialchars(date('d/m/Y', strtotime($r['data_entrada']))) ?></span>
+              <span class="info-hora"><strong>Hora:</strong> <?= htmlspecialchars(substr($r['hora_entrada'],0,5)) ?></span>
+              <span class="info-valor"><strong>Valor:</strong> <?= brl($r['valor_total'] ?? 0) ?></span>
+              <span class="info-pago"><strong>Pago:</strong> <?= $pagoTexto ?></span>
             </div>
-            <div class="acoes">
-              <button class="btn ver" title="Ver"><i class="fa-solid fa-eye"></i></button>
-              <button class="btn excluir" title="Excluir"><i class="fa-solid fa-trash"></i></button>
-            </div>
+<div class="acoes">
+  <button class="btn ver" title="Ver">
+    <i class="fa-solid fa-eye"></i>
+  </button>
+
+  <button class="btn print" title="Imprimir OS">
+    <i class="fa-solid fa-print"></i>
+  </button>
+
+  <button class="btn excluir" title="Excluir">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+</div>
+
           </div>
         </div>
         <?php
@@ -291,7 +292,7 @@ if (!function_exists('render_pager')) {
         }
         if ($page<$total_pages) {
           $p = $page+1;
-          echo '<a class="pg" href="?'.$base.'p='.$p.'&pp='.$per_page.'" data-page="'.$p.'">&raquo;</a>';
+          echo '<a class="pg" href="?'.$base.'p='.$p.'&pp='.$per_page.'" data-page="'.$p.'" >&raquo;</a>';
         }
         ?>
       </div>
@@ -308,7 +309,7 @@ if (!function_exists('render_pager')) {
     <script>
     (function(){
       var sel = document.getElementById('pp');
-      if(!sel) return;
+      if (!sel) return;
       sel.addEventListener('change', function(){
         const url = new URL(location.href);
         url.searchParams.set('pp', this.value);
@@ -333,7 +334,8 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
     'debug'  => [
       'received' => [
         'ids'=>$ids,'nome'=>$nome,'modelo'=>$modelo,'servico'=>$servico,'telefone'=>$telefone,'cpf'=>$cpf,
-        'status'=>$statusArr,'pago'=>$pago,'metodo'=>$metodo,'data_ini'=>$data_ini,'data_fim'=>$data_fim,
+        'status'=>$statusArr,
+        'data_ini'=>$data_ini,'data_fim'=>$data_fim,
         'valor_min'=>$valor_min,'valor_max'=>$valor_max,
         'p'=>$page,'pp'=>$per_page
       ],
@@ -402,25 +404,6 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
         <div>
           <label>Data (fim)</label>
           <input type="date" name="data_fim">
-        </div>
-        <div>
-          <label>Pago</label>
-          <select name="pago">
-            <option value="">—</option>
-            <option value="1">Sim</option>
-            <option value="0">Não</option>
-          </select>
-        </div>
-        <div>
-          <label>Método de pagamento</label>
-          <select name="metodo_pagamento">
-            <option value="">—</option>
-            <option value="pix">Pix</option>
-            <option value="dinheiro">Dinheiro</option>
-            <option value="credito">Cartão de Crédito</option>
-            <option value="debito">Cartão de Débito</option>
-            <option value="outro">Outro</option>
-          </select>
         </div>
         <div>
           <label>Valor mín (R$)</label>
@@ -502,22 +485,6 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
         <label>💰 Valor Total</label>
         <div id="viewValorTotal" class="editable"></div>
 
-        <label>Método de Pagamento</label>
-        <select id="viewMetodoPagamento" class="editable-select">
-          <option value="">—</option>
-          <option value="pix">❖ Pix</option>
-          <option value="dinheiro">💵 Dinheiro</option>
-          <option value="credito">💳 Crédito</option>
-          <option value="debito">💳 Débito</option>
-          <option value="outro">🔹 Outro</option>
-        </select>
-
-        <label>✅ Pago</label>
-        <label class="switch">
-          <input type="checkbox" id="viewPago" data-field="pago">
-          <span class="slider"></span>
-        </label>
-
         <label>Status</label>
         <select id="viewStatusSelect" class="status-select" data-id="">
           <option value="pendente">pendente</option>
@@ -536,42 +503,6 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
   </div>
 </div>
 
-<!-- MODAL EDITAR -->
-<div id="modalEdit" class="modal hidden" aria-hidden="true">
-  <div class="modal-body">
-    <h3>Editar O.S. <span id="editId"></span></h3>
-    <form id="editForm" onsubmit="return false;">
-      <input type="hidden" id="editIdInput">
-      <div class="grid-2">
-        <div>
-          <label>Nome</label><input id="f_nome" type="text">
-          <label>Modelo</label><input id="f_modelo" type="text">
-          <label>Serviço</label><input id="f_servico" type="text">
-          <label>Observação</label><input id="f_observacao" type="text">
-          <label>Pago</label><input id="f_pago" type="text" placeholder="0,00">
-        </div>
-        <div>
-          <label>Data</label><input id="f_data" type="date">
-          <label>Hora</label><input id="f_hora" type="time">
-          <label>Status</label>
-          <select id="f_status">
-            <option value="pendente">pendente</option>
-            <option value="em_andamento">em_andamento</option>
-            <option value="concluido">concluido</option>
-            <option value="cancelado">cancelado</option>
-            <option value="aguardando_retirada">aguardando_retirada</option>
-            <option value="orcamento">orcamento</option>
-          </select>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-ghost" data-close>Cancelar</button>
-        <button id="btnSalvarEdit">Salvar</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
 (function(){
   // ==== Paleta de cores de status ====
@@ -584,9 +515,9 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
     orcamento: '#a45bff'
   };
 
-  const $ = s=>document.querySelector(s);
-  const $$ = s=>Array.from(document.querySelectorAll(s));
-  const list = $('#osList');
+  const $  = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const list  = $('#osList');
   const pager = $('#paginacao');
 
   function fmtBR(n){
@@ -595,12 +526,38 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
     return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v);
   }
 
+  // toNum robusto (corrige bug 150 -> 15000)
+  function toNum(v){
+    if (v == null) return 0;
+    let s = String(v).trim().replace(/[R$\s]/g,'');
+    if (!s) return 0;
+
+    const hasComma = s.includes(',');
+    const hasDot   = s.includes('.');
+
+    if (hasComma && hasDot) {
+      // Formato tipo 1.234,56 -> . = milhar, , = decimal
+      s = s.replace(/\./g,'').replace(',','.');
+    } else if (hasComma && !hasDot) {
+      // Formato 150,00 -> , decimal
+      s = s.replace(',','.');
+    }
+    // Se só tem ponto, assume decimal normal
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  }
+
+  // Atualiza card da lista após edições
   function updateCardFromField(id, campo, valor){
     const card = document.querySelector(`.os-card[data-id="${id}"]`);
     if (!card) return;
-
-    const left  = card.querySelector('.os-left');
     const right = card.querySelector('.os-right');
+    const left  = card.querySelector('.os-left');
+    const spans = right ? right.querySelectorAll('.infos span') : [];
+    const spanData  = spans[0];
+    const spanHora  = spans[1];
+    const spanValor = spans[2];
+    const spanPago  = spans[3];
 
     if (campo === 'nome') {
       const h2 = left.querySelector('h2');
@@ -633,51 +590,26 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
       }
     }
 
-    // Pago / valor_total
-    if (campo === 'pago' || campo === 'valor_total') {
-      const spans = right.querySelectorAll('.infos span');
-      const pagoSpan = spans[2];
-      if (pagoSpan) {
-        let isPago = false;
-        let valorNum = 0;
-
-        if (campo === 'pago') {
-          const n = parseFloat(valor);
-          if (!isNaN(n) && (n === 0 || n === 1)) {
-            isPago = n === 1;
-            const existente = pagoSpan.textContent
-              .replace(/[^\d,.-]/g, '')
-              .replace(/\.(?=\d{3})/g, '')
-              .replace(',', '.');
-            valorNum = parseFloat(existente) || (card.dataset.valorTotal ? parseFloat(card.dataset.valorTotal) : 0);
-          } else {
-            valorNum = isNaN(n) ? 0 : n;
-            isPago = valorNum > 0;
-          }
-        } else {
-          valorNum = parseFloat(valor) || 0;
-          isPago = /Sim/.test(pagoSpan.textContent) ? true : (valorNum > 0);
-        }
-
-        card.dataset.valorTotal = String(valorNum);
-        pagoSpan.innerHTML = `<strong>Pago:</strong> ${isPago ? '✅ Sim (' + fmtBR(valorNum) + ')' : '❌ Não'}`;
-      }
+    if (campo === 'data_entrada' && spanData) {
+      const dt = valor ? new Date(valor) : null;
+      const str = dt && !isNaN(dt) ? dt.toLocaleDateString('pt-BR') : '-';
+      spanData.innerHTML = '<strong>Data:</strong> ' + str;
     }
 
-    if (campo === 'data_entrada') {
-      const spans = right.querySelectorAll('.infos span');
-      const dataSpan = spans[0];
-      if (dataSpan) {
-        const dt = valor ? new Date(valor) : null;
-        const str = dt ? dt.toLocaleDateString('pt-BR') : '-';
-        dataSpan.innerHTML = '<strong>Data:</strong> ' + str;
-      }
+    if (campo === 'hora_entrada' && spanHora) {
+      spanHora.innerHTML = '<strong>Hora:</strong> ' + (valor ? String(valor).slice(0,5) : '-');
     }
 
-    if (campo === 'hora_entrada') {
-      const spans = right.querySelectorAll('.infos span');
-      const horaSpan = spans[1];
-      if (horaSpan) horaSpan.innerHTML = '<strong>Hora:</strong> ' + (valor ? String(valor).slice(0,5) : '-');
+    if (campo === 'valor_total' && spanValor) {
+      const num = toNum(valor);
+      card.dataset.valorTotal = String(num);
+      spanValor.innerHTML = '<strong>Valor:</strong> ' + fmtBR(num);
+    }
+
+    if (campo === 'pago' && spanPago) {
+      const flag = Number(valor) > 0;
+      card.dataset.pago = flag ? '1' : '0';
+      spanPago.innerHTML = '<strong>Pago:</strong> ' + (flag ? '✅ Sim' : '❌ Não');
     }
 
     if (campo === 'status') {
@@ -726,24 +658,27 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
     const p2 = new URLSearchParams(params);
     p2.delete('partial');
     history.replaceState(null,'','?'+p2.toString());
-    $('#totalRows') && ($('#totalRows').textContent = j.total);
-    wireCards(); wirePager(); wirePP();
+    if ($('#totalRows')) $('#totalRows').textContent = j.total;
+    wireCards();
+    wirePager();
+    wirePP();
   }
   window.fetchList = fetchList;
 
   function wirePager(){
     document.querySelectorAll('#paginacao .pg').forEach(btn=>{
-      btn.addEventListener('click', (ev)=>{
+      btn.addEventListener('click', ev=>{
         ev.preventDefault();
         const page = btn.dataset.page || 1;
-        const params = qsParams({p: page});
-        fetchList(params);
+        fetchList(qsParams({p: page}));
       });
     });
   }
+
   function wirePP(){
     const pp = $('#pp');
-    if (pp) pp.addEventListener('change', ()=>{
+    if (!pp) return;
+    pp.addEventListener('change', ()=>{
       fetchList(qsParams({pp: pp.value, p: '1'}));
     });
   }
@@ -751,7 +686,8 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
   // Abre/fecha modal de filtros
   const modalFiltros = document.getElementById('modalFiltros');
   const formFiltros  = document.getElementById('filtrosForm');
-  document.getElementById('btnFiltro').addEventListener('click', ()=> {
+
+  $('#btnFiltro').addEventListener('click', ()=> {
     const p = new URLSearchParams(window.location.search);
     formFiltros.reset();
 
@@ -769,39 +705,37 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
     modalFiltros.classList.remove('hidden');
     modalFiltros.setAttribute('aria-hidden','false');
   });
+
   modalFiltros.addEventListener('click', e=>{
     if (e.target===modalFiltros) {
       modalFiltros.classList.add('hidden');
       modalFiltros.setAttribute('aria-hidden','true');
     }
   });
+
   modalFiltros.querySelector('[data-close]').addEventListener('click', ()=>{
     modalFiltros.classList.add('hidden');
     modalFiltros.setAttribute('aria-hidden','true');
   });
 
   // Limpar filtros
-  document.getElementById('btnLimpar').addEventListener('click', ()=>{
+  $('#btnLimpar').addEventListener('click', ()=>{
     const url = new URL(location.href);
     url.search = '';
-    const ppSel = document.getElementById('pp');
     url.searchParams.set('p','1');
-    url.searchParams.set('pp', String(ppSel?.value || 10));
+    url.searchParams.set('pp', String($('#pp')?.value || 10));
     location.href = url.toString();
   });
 
   // Aplicar filtros
-  document.getElementById('btnAplicarFiltros').addEventListener('click', (e)=>{
+  $('#btnAplicarFiltros').addEventListener('click', e=>{
     e.preventDefault();
-    const form = document.getElementById('filtrosForm');
-    const fd = new FormData(form);
-
+    const fd = new FormData(formFiltros);
     const url = new URL(location.href);
     url.search = '';
 
-    const ppSel = document.getElementById('pp');
     url.searchParams.set('p','1');
-    url.searchParams.set('pp', String(ppSel?.value || 10));
+    url.searchParams.set('pp', String($('#pp')?.value || 10));
 
     for (const [k, v] of fd.entries()) {
       if (v === '' || v === null) continue;
@@ -810,213 +744,358 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
     location.href = url.toString();
   });
 
-  // ======== VIEW ========
-  function normMetodo(v){
-    if (!v) return '';
-    v = String(v).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const alias = {
-      'pix':'pix','dinheiro':'dinheiro','credito':'credito','debito':'debito','outro':'outro',
-      'cartao de credito':'credito','cartao de debito':'debito'
-    };
-    return alias[v] || v;
-  }
+  /* ========== MODAL DE PAGAMENTO (SIMPLES + MISTO) ========== */
+  function openPagamentoModal(opts){
+    const {
+      id,
+      valorInicial = null,
+      statusAoConfirmar = null, // 'concluido' ou null
+      dadosOS = null,
+      onDone = null
+    } = opts || {};
 
+    let base = toNum(valorInicial);
+    if (!base && dadosOS) {
+      base = toNum(dadosOS.valor_total);
+    }
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-pagamento show';
+    modal.innerHTML = `
+      <div class="modal-pagamento-content">
+        <h2>Registrar Pagamento</h2>
+        <p class="desc">Escolha o método ou distribua entre várias formas.</p>
+
+        <div class="grid-opcoes">
+          <button class="opcao" data-tipo="dinheiro">💵 Dinheiro</button>
+          <button class="opcao" data-tipo="pix">🟢 Pix</button>
+          <button class="opcao" data-tipo="credito">💳 Crédito</button>
+          <button class="opcao" data-tipo="debito">💳 Débito</button>
+          <button class="opcao destaque" data-tipo="misto">🧩 Pagamento misto</button>
+        </div>
+
+        <div class="box-info-valor">
+          <p class="info-atual"><strong>Valor base:</strong> <span id="pg_valorBase">${fmtBR(base || 0)}</span></p>
+          <p class="info-hint">Você pode confirmar o valor base ou editar no fluxo abaixo.</p>
+        </div>
+
+        <div class="footer-acoes">
+          <button class="cancel-btn">Cancelar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    if (!document.getElementById('__modalPgCSS_os')) {
+      const s = document.createElement('style');
+      s.id = '__modalPgCSS_os';
+      s.textContent = `
+        .modal-pagamento{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999}
+        .modal-pagamento-content{background:#232832;border:1px solid #2e343d;border-radius:12px;padding:18px;width:min(520px,92vw);color:#e8edf2;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+        .grid-opcoes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
+        .opcao{padding:12px;border-radius:10px;border:1px solid #2e343d;background:#2b3038;color:#e8edf2;cursor:pointer;text-align:center;font-weight:600}
+        .opcao:hover{outline:1px solid #4db3ff}
+        .opcao.destaque{grid-column:1/-1;border-color:#4db3ff}
+        .box-info-valor{margin:6px 0 4px;font-size:13px;opacity:.9}
+        .footer-acoes{display:flex;justify-content:flex-end;margin-top:10px}
+        .cancel-btn{padding:8px 13px;border-radius:8px;border:1px solid #e05c5c;background:#2b3038;color:#e8edf2;cursor:pointer}
+        .linha{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+        .linha input{width:100%;padding:8px;border-radius:8px;border:1px solid #2e343d;background:#1f2329;color:#e8edf2}
+        .resumo{margin-top:8px;text-align:center;opacity:.9;font-size:13px}
+        .acoes{display:flex;justify-content:space-between;margin-top:12px}
+        .confirm-btn,.back-btn{padding:8px 13px;border-radius:8px;border:1px solid #43d17c;background:#2b3038;color:#e8edf2;cursor:pointer}
+        .back-btn{border-color:#2e343d}
+      `;
+      document.head.appendChild(s);
+    }
+
+    const close = () => {
+      modal.classList.remove('show');
+      setTimeout(()=> modal.remove(), 200);
+    };
+
+    modal.querySelector('.cancel-btn').onclick = () => {
+      close();
+      if (typeof onDone === 'function') onDone(null, null, { cancel:true });
+    };
+    modal.addEventListener('click', e => { if (e.target === modal) { modal.querySelector('.cancel-btn').click(); } });
+
+    async function finalizarSimples(tipo){
+      const valor = base > 0 ? base : promptValor();
+      if (!valor) return;
+
+      await salvarPagamento({
+        id,
+        statusAoConfirmar,
+        metodo: tipo,
+        valor_total: valor
+      });
+      close();
+      if (typeof onDone === 'function') onDone(valor, tipo, { cancel:false });
+    }
+
+    function promptValor(){
+      const v = prompt('Informe o valor recebido:', base ? String(base.toFixed(2)) : '');
+      const n = toNum(v);
+      if (!n || n <= 0) {
+        alert('Valor inválido.');
+        return 0;
+      }
+      return n;
+    }
+
+    async function finalizarMisto(){
+      const box = modal.querySelector('.modal-pagamento-content');
+      box.innerHTML = `
+        <h2>Pagamento misto</h2>
+        <p class="desc">Distribua os valores entre as formas abaixo.</p>
+        <div class="linha">
+          <div>
+            <label style="opacity:.85">Pix</label>
+            <input id="m_pix" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div>
+            <label style="opacity:.85">Dinheiro</label>
+            <input id="m_din" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+        <div class="linha">
+          <div>
+            <label style="opacity:.85">Crédito</label>
+            <input id="m_cred" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+          <div>
+            <label style="opacity:.85">Débito</label>
+            <input id="m_deb" type="number" step="0.01" min="0" placeholder="0.00">
+          </div>
+        </div>
+        <div class="resumo" id="mix_resumo"></div>
+        <div class="acoes">
+          <button class="back-btn">Voltar</button>
+          <button class="confirm-btn">Confirmar</button>
+        </div>
+      `;
+
+      const $pix = box.querySelector('#m_pix');
+      const $din = box.querySelector('#m_din');
+      const $cred = box.querySelector('#m_cred');
+      const $deb = box.querySelector('#m_deb');
+      const $res = box.querySelector('#mix_resumo');
+
+      const upd = () => {
+        const total = toNum($pix.value)+toNum($din.value)+toNum($cred.value)+toNum($deb.value);
+        $res.textContent = 'Total: ' + fmtBR(total);
+      };
+      [$pix,$din,$cred,$deb].forEach(i=> i.addEventListener('input', upd));
+      upd();
+
+      box.querySelector('.back-btn').onclick = () => {
+        close();
+        openPagamentoModal(opts); // reabre tela inicial
+      };
+
+      box.querySelector('.confirm-btn').onclick = async () => {
+        const valores = {
+          pix:      toNum($pix.value),
+          dinheiro: toNum($din.value),
+          credito:  toNum($cred.value),
+          debito:   toNum($deb.value)
+        };
+        const total = valores.pix + valores.dinheiro + valores.credito + valores.debito;
+        if (!total || total <= 0) {
+          alert('Informe algum valor.');
+          return;
+        }
+        await salvarPagamento({
+          id,
+          statusAoConfirmar,
+          metodo: 'misto',
+          valor_total: total,
+          ...valores
+        });
+        close();
+        if (typeof onDone === 'function') onDone(total, 'misto', { cancel:false });
+      };
+    }
+
+    async function salvarPagamento(cfg){
+      const {
+        id,
+        statusAoConfirmar,
+        metodo,
+        valor_total,
+        pix = 0,
+        dinheiro = 0,
+        credito = 0,
+        debito = 0
+      } = cfg;
+
+      const headers = { 'Content-Type':'application/x-www-form-urlencoded' };
+      const vt = Number(valor_total || 0);
+      const vtFmt = vt.toFixed(2);
+
+      // Se está concluindo, registra via atualizar_status (log + consistência)
+      if (statusAoConfirmar === 'concluido') {
+        const payload = new URLSearchParams({
+          id,
+          status: 'concluido',
+          tipo_pagamento: metodo === 'misto' ? 'misto' : (metodo || ''),
+          valor_confirmado: vtFmt
+        });
+        if (metodo === 'misto') {
+          payload.set('pix',      pix.toFixed(2));
+          payload.set('dinheiro', dinheiro.toFixed(2));
+          payload.set('credito',  credito.toFixed(2));
+          payload.set('debito',   debito.toFixed(2));
+        }
+        const r = await fetch('includes/atualizar_status.php', {
+          method:'POST', headers, body: payload
+        });
+        if (!r.ok) {
+          const msg = await r.text();
+          alert(msg || 'Erro ao atualizar status.');
+          throw new Error(msg || 'Erro status');
+        }
+      }
+
+      // Atualiza valor_total (sempre)
+      await fetch('includes/atualizar_os.php', {
+        method:'POST', headers,
+        body: new URLSearchParams({ id, campo:'valor_total', valor: vtFmt })
+      });
+
+      // Atualiza metodo_pagamento (sempre que informar)
+      await fetch('includes/atualizar_os.php', {
+        method:'POST', headers,
+        body: new URLSearchParams({ id, campo:'metodo_pagamento', valor: metodo || '' })
+      });
+
+      // ⚠️ Campo "pago" só deve ser alterado quando status for concluido
+      if (statusAoConfirmar === 'concluido') {
+        await fetch('includes/atualizar_os.php', {
+          method:'POST', headers,
+          body: new URLSearchParams({ id, campo:'pago', valor: 1 })
+        });
+        updateCardFromField(parseInt(id,10), 'pago', 1);
+      }
+
+      // Atualiza UI do valor_total
+      updateCardFromField(parseInt(id,10), 'valor_total', vt);
+
+      if (statusAoConfirmar === 'concluido') {
+        updateCardFromField(parseInt(id,10), 'status', 'concluido');
+        const sel = $('#viewStatusSelect');
+        if (sel) sel.value = 'concluido';
+      }
+
+      const viewValor = $('#viewValorTotal');
+      if (viewValor) viewValor.textContent = fmtBR(vt);
+    }
+
+    modal.querySelectorAll('.opcao').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tipo = btn.dataset.tipo;
+        if (tipo === 'misto') {
+          finalizarMisto();
+        } else {
+          finalizarSimples(tipo);
+        }
+      });
+    });
+
+    return modal;
+  }
+  window.openPagamentoModal = openPagamentoModal;
+
+  // ======== VIEW / EDIÇÃO INLINE ========
   async function loadView(id) {
     try {
-      const r = await fetch('includes/get_os.php?id=' + encodeURIComponent(id));
+      const r = await fetch('includes/get_os.php?id=' + encodeURIComponent(id), {
+        cache: 'no-store'
+      });
       const j = await r.json();
       if (!j.ok) { alert(j.msg || 'Falha ao carregar O.S.'); return; }
       const d = j.data;
 
-      const fmtBRv = (v)=> new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(parseFloat(v||0));
-      const safe   = (v)=> (v===null||v===undefined||v==='') ? '—' : String(v);
+      const safe = v => (v===null||v===undefined||v==='') ? '—' : String(v);
 
-      function updateViewField(field, value) {
-        const idMap = {
-          valor_total: 'viewValorTotal',
-          pago: 'viewPago',
-          status: 'viewStatusSelect',
-          data_entrada: 'viewData',
-          hora_entrada: 'viewHora',
-        };
-        const domId = idMap[field] || `view${field.charAt(0).toUpperCase()+field.slice(1)}`;
-        const el = document.getElementById(domId);
+      function fillField(map){
+        const el = document.getElementById(map.id);
         if (!el) return;
+        let val = d[map.campo];
 
-        if (field === 'status' && el.tagName === 'SELECT') {
-          el.value = value || 'pendente';
-        } else if (field.match(/valor|pago/)) {
-          el.textContent = fmtBRv(value);
-        } else if (field === 'data_entrada') {
-          el.textContent = value ? new Date(value).toLocaleDateString('pt-BR') : '—';
+        if (map.campo === 'valor_total') {
+          el.textContent = fmtBR(val || 0);
+        } else if (map.campo === 'data_entrada' && val) {
+          el.textContent = new Date(val).toLocaleDateString('pt-BR');
+        } else if (map.campo === 'hora_entrada' && val) {
+          el.textContent = String(val).slice(0,5);
         } else {
-          el.textContent = value || '—';
+          el.textContent = safe(val);
         }
-        el.classList.add('flash-success');
-        setTimeout(() => el.classList.remove('flash-success'), 700);
-      }
 
-      // Preenche campos de texto
-      const campos = [
-        { id: 'viewNome', campo: 'nome' },
-        { id: 'viewCPF', campo: 'cpf' },
-        { id: 'viewTelefone', campo: 'telefone' },
-        { id: 'viewEndereco', campo: 'endereco' },
-        { id: 'viewModelo', campo: 'modelo' },
-        { id: 'viewServico', campo: 'servico' },
-        { id: 'viewObs', campo: 'observacao' },
-        { id: 'viewSenhaPadrao', campo: 'senha_padrao' },
-        { id: 'viewSenhaEscrita', campo: 'senha_escrita' },
-        { id: 'viewValorTotal', campo: 'valor_total' },
-        { id: 'viewMetodoPagamento', campo: 'metodo_pagamento' },
-        { id: 'viewPago', campo: 'pago' },
-        { id: 'viewData', campo: 'data_entrada' },
-        { id: 'viewHora', campo: 'hora_entrada' },
-        { id: 'viewPdf', campo: 'pdf_path' }
-      ];
-
-      document.getElementById('viewId').textContent = '#' + String(d.id).padStart(5, '0');
-      const viewSel = document.getElementById('viewStatusSelect');
-      viewSel.dataset.id = d.id;
-      viewSel.value = d.status || 'pendente';
-
-      for (const c of campos) {
-        const el = document.getElementById(c.id);
-        if (!el) continue;
-        const valor = d[c.campo];
-        if (c.campo.startsWith('valor') || c.campo === 'pago') {
-          el.textContent = fmtBRv(valor);
-        } else if (c.campo === 'data_entrada' && valor) {
-          el.textContent = new Date(valor).toLocaleDateString('pt-BR');
-        } else {
-          el.textContent = safe(valor);
-        }
-        el.dataset.field = c.campo;
-        el.dataset.id = d.id;
+        el.dataset.field = map.campo;
+        el.dataset.id    = d.id;
         el.classList.add('editable');
       }
 
-      // Checkbox de pago
-      const pagoBox = document.getElementById('viewPago');
-      if (pagoBox) {
-        pagoBox.checked = d.pago == 1;
-        pagoBox.dataset.id = d.id;
+      $('#viewId').textContent = '#' + String(d.id).padStart(5, '0');
 
-        pagoBox.addEventListener('change', async () => {
-          const marcado = pagoBox.checked;
-          const novoValor = marcado ? 1 : 0;
+      const campos = [
+        { id:'viewNome', campo:'nome' },
+        { id:'viewCPF', campo:'cpf' },
+        { id:'viewTelefone', campo:'telefone' },
+        { id:'viewEndereco', campo:'endereco' },
+        { id:'viewModelo', campo:'modelo' },
+        { id:'viewServico', campo:'servico' },
+        { id:'viewObs', campo:'observacao' },
+        { id:'viewSenhaPadrao', campo:'senha_padrao' },
+        { id:'viewSenhaEscrita', campo:'senha_escrita' },
+        { id:'viewValorTotal', campo:'valor_total' },
+        { id:'viewData', campo:'data_entrada' },
+        { id:'viewHora', campo:'hora_entrada' },
+        { id:'viewPdf', campo:'pdf_path' }
+      ];
+      campos.forEach(fillField);
 
-          try {
-            const resp = await fetch('includes/atualizar_os.php', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: new URLSearchParams({ id: d.id, campo: 'pago', valor: novoValor })
-            });
-            const jj = await resp.json();
-            if (!jj.ok) throw new Error(jj.msg);
+      const viewSel = $('#viewStatusSelect');
+      viewSel.dataset.id = d.id;
+      viewSel.value = d.status || 'pendente';
 
-            pagoBox.classList.add('flash-success');
-            setTimeout(() => pagoBox.classList.remove('flash-success'), 700);
-
-            if (novoValor === 1) {
-              let valorAtual = 0;
-              const elValor = document.getElementById('viewValorTotal');
-              if (elValor) {
-                const txt = elValor.textContent.replace('R$','').replace(/\./g,'').replace(',','.').trim();
-                const parsed = parseFloat(txt);
-                if (!isNaN(parsed)) valorAtual = parsed;
-              }
-              updateCardFromField(parseInt(d.id), 'pago', valorAtual);
-            } else {
-              updateCardFromField(parseInt(d.id), 'pago', 0);
-            }
-
-            d.pago = novoValor;
-          } catch (err) {
-            pagoBox.classList.add('flash-error');
-            setTimeout(() => pagoBox.classList.remove('flash-error'), 700);
-            pagoBox.checked = !pagoBox.checked;
-            alert('Erro ao atualizar status de pagamento.');
-          }
-        });
-      }
-
-      // Método de pagamento
-      const selMetodo = document.getElementById('viewMetodoPagamento');
-      if (selMetodo) {
-        if (selMetodo.options.length === 0) {
-          selMetodo.innerHTML = `
-            <option value="">—</option>
-            <option value="pix">❖ Pix</option>
-            <option value="dinheiro">💵 Dinheiro</option>
-            <option value="credito">💳 Crédito</option>
-            <option value="debito">💳 Débito</option>
-            <option value="outro">🔹 Outro</option>`;
-        }
-        const metodoDB = normMetodo(d.metodo_pagamento || '');
-        selMetodo.value = ['pix','dinheiro','credito','debito','outro'].includes(metodoDB) ? metodoDB : '';
-
-        selMetodo.onchange = async () => {
-          const metodo = selMetodo.value;
-          try {
-            const resp = await fetch('includes/atualizar_os.php', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: new URLSearchParams({ id: d.id, campo: 'metodo_pagamento', valor: metodo })
-            });
-            const jj = await resp.json();
-            if (!jj.ok) throw new Error(jj.msg || 'Falha ao salvar método');
-            d.metodo_pagamento = metodo;
-            selMetodo.classList.add('flash-success');
-            setTimeout(()=> selMetodo.classList.remove('flash-success'), 700);
-          } catch {
-            selMetodo.classList.add('flash-error');
-            setTimeout(()=> selMetodo.classList.remove('flash-error'), 700);
-            alert('Erro ao salvar método de pagamento.');
-          }
-        };
-      }
-
-      // Abre modal
       openModal($('#modalView'));
 
-      // Edição inline simples
-      document.querySelectorAll('.editable:not(.editable-select)').forEach((el) => {
-        el.addEventListener('click', function () {
+      // Edição inline (inclui valor_total que dispara modal de pagamento)
+      $('#modalView').querySelectorAll('.editable').forEach(el => {
+        el.addEventListener('click', function(){
           if (this.querySelector('input, textarea')) return;
 
           const campo = this.dataset.field;
-          const id = this.dataset.id;
-          const valorAtual =
-            this.textContent.trim() === '—'
-              ? ''
-              : this.textContent
-                  .trim()
-                  .replace('R$', '')
-                  .replace(/\./g, '')
-                  .replace(',', '.');
+          const idOS  = this.dataset.id;
+          const originalText = this.textContent.trim();
+          const originalVal  = originalText === '—' ? '' : originalText;
 
           let input;
-          if (campo.includes('data')) {
+          if (campo === 'observacao') {
+            input = document.createElement('textarea');
+            input.value = originalText === '—' ? '' : originalText;
+          } else if (campo.includes('data')) {
             input = document.createElement('input');
             input.type = 'date';
-            input.value = d[campo]?.split('T')[0] || '';
+            input.value = (d[campo] || '').slice(0,10);
           } else if (campo.includes('hora')) {
             input = document.createElement('input');
             input.type = 'time';
-            input.value = d[campo] || '';
-          } else if (campo.startsWith('valor') || campo === 'pago') {
+            input.value = (d[campo] || '').slice(0,5);
+          } else if (campo === 'valor_total') {
             input = document.createElement('input');
             input.type = 'number';
             input.step = '0.01';
-            input.value = parseFloat(valorAtual || 0).toFixed(2);
-          } else if (campo === 'observacao') {
-            input = document.createElement('textarea');
-            input.value = this.textContent.trim();
+            const num = toNum(d.valor_total || originalText);
+            input.value = num ? num.toFixed(2) : '';
           } else {
             input = document.createElement('input');
             input.type = 'text';
-            input.value = this.textContent.trim() === '—' ? '' : this.textContent.trim();
+            input.value = originalText === '—' ? '' : originalText;
           }
 
           input.className = 'inline-input';
@@ -1024,316 +1103,171 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
           this.appendChild(input);
           input.focus();
 
+          const parent = this;
+
           const salvar = async () => {
-            const novoValor = input.value.trim();
-            const parent = this;
-            if (novoValor === valorAtual) {
-              parent.textContent = valorAtual || '—';
+            const novoBruto = input.value.trim();
+
+            // sem mudança
+            if (novoBruto === (originalVal || '')) {
+              parent.textContent = originalVal || '—';
               return;
             }
 
-            const params = new URLSearchParams({ id, campo, valor: novoValor });
+            // valor_total -> abre modal de pagamento (NÃO mexe em pago se não for conclusão)
+            if (campo === 'valor_total') {
+              const num = toNum(novoBruto);
+              if (!num || num <= 0) {
+                parent.textContent = originalVal || '—';
+                return;
+              }
 
+              openPagamentoModal({
+                id: idOS,
+                valorInicial: num,
+                dadosOS: d,
+                // statusAoConfirmar null -> não altera pago, apenas valor/metodo
+                onDone: (valorFinal, metodo, extra) => {
+                  if (extra && extra.cancel) {
+                    parent.textContent = originalVal || '—';
+                    return;
+                  }
+                  parent.textContent = fmtBR(valorFinal);
+                  d.valor_total = valorFinal;
+                }
+              });
+              return;
+            }
+
+            // demais campos: salva direto
             try {
               const resp = await fetch('includes/atualizar_os.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params
+                method:'POST',
+                headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                body: new URLSearchParams({ id:idOS, campo, valor:novoBruto })
               });
               const res = await resp.json();
-              if (res.ok) {
-                parent.textContent =
-                  campo.startsWith('valor') || campo === 'pago'
-                    ? fmtBR(novoValor)
-                    : novoValor || '—';
-                parent.classList.add('flash-success');
-                setTimeout(() => parent.classList.remove('flash-success'), 800);
+              if (!res.ok) throw new Error(res.msg || 'Erro');
 
-                updateCardFromField(parseInt(id, 10), campo, novoValor);
+              d[campo] = novoBruto;
+              if (campo.includes('data') && novoBruto) {
+                parent.textContent = new Date(novoBruto).toLocaleDateString('pt-BR');
+              } else if (campo.includes('hora') && novoBruto) {
+                parent.textContent = String(novoBruto).slice(0,5);
               } else {
-                throw new Error(res.msg || 'Erro');
+                parent.textContent = novoBruto || '—';
               }
+
+              parent.classList.add('flash-success');
+              setTimeout(()=> parent.classList.remove('flash-success'), 700);
+
+              updateCardFromField(parseInt(idOS,10), campo, novoBruto);
             } catch (err) {
-              parent.textContent = valorAtual || '—';
+              console.error(err);
+              parent.textContent = originalVal || '—';
               parent.classList.add('flash-error');
-              setTimeout(() => parent.classList.remove('flash-error'), 800);
+              setTimeout(()=> parent.classList.remove('flash-error'), 700);
             }
           };
 
           input.addEventListener('blur', salvar);
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') { e.preventDefault(); salvar(); }
-            else if (e.key === 'Escape') { this.textContent = valorAtual || '—'; }
+          input.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+            else if (e.key === 'Escape') { parent.textContent = originalVal || '—'; }
           });
         });
       });
 
-      // Status + Finalização
-      const select = $('#viewStatusSelect');
-      select.onchange = function () {
-        const id = this.dataset.id;
+      // Status -> se "concluido" abre modal de pagamento
+      viewSel.onchange = function(){
+        const idSel = this.dataset.id;
         const status = this.value;
-        let tipo_pagamento = '';
 
         if (status === 'concluido') {
-          const modal = document.createElement('div');
-          modal.className = 'modal-pagamento show';
-          modal.innerHTML = `
-            <div class="modal-pagamento-content">
-              <h2>Finalizar Pagamento</h2>
-              <p class="desc">Escolha o método e confirme o valor recebido.</p>
-
-              <select id="tipoPagamentoSelect" class="styled-select">
-                <option value="" disabled selected>Selecione o tipo de pagamento...</option>
-                <option value="dinheiro">💵 Dinheiro</option>
-                <option value="pix">❖ Pix</option>
-                <option value="credito">💳 Cartão de Crédito</option>
-                <option value="debito">💳 Cartão de Débito</option>
-              </select>
-
-              <div id="valorBox" class="valor-box hidden">
-                <p id="valorAtualTxt"></p>
-                <div id="valorResumo" class="valor-resumo"></div>
-                <div class="valor-acoes">
-                  <button id="btnConfirmarValor" class="confirm-btn">✔ Valor correto</button>
-                  <button id="btnEditarValor" class="edit-btn">✏️ Editar</button>
-                </div>
-                <div id="editValorBox" class="edit-box hidden">
-                  <input id="novoValorInput" type="number" step="0.01" min="0" placeholder="Digite o novo valor">
-                  <button id="btnSalvarValor" class="confirm-btn">Salvar valor</button>
-                </div>
-              </div>
-
-              <div class="modal-buttons">
-                <button id="cancelPagamento" class="cancel-btn">Cancelar</button>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(modal);
-
-          const selectMetodo = modal.querySelector('#tipoPagamentoSelect');
-          const valorBox = modal.querySelector('#valorBox');
-          const valorAtualTxt = modal.querySelector('#valorAtualTxt');
-          const valorResumo = modal.querySelector('#valorResumo');
-          const editBox = modal.querySelector('#editValorBox');
-          const inputNovoValor = modal.querySelector('#novoValorInput');
-
-          modal.querySelector('#cancelPagamento').onclick = () => {
-            this.value = d.status || 'em_andamento';
-            modal.classList.remove('show');
-            setTimeout(() => modal.remove(), 250);
-          };
-
-          valorResumo.innerHTML = `<strong>Valor total:</strong> ${fmtBRv(d.valor_total || 0)}`;
-
-          selectMetodo.addEventListener('change', () => {
-            tipo_pagamento = selectMetodo.value;
-
-            let valorBase = parseFloat(d['valor_total'] || 0);
-            if (!valorBase || valorBase === 0) {
-              const elView = document.getElementById('viewValorTotal');
-              if (elView) {
-                const txt = elView.textContent.replace('R$','').replace(/\./g,'').replace(',','.').trim();
-                const parsed = parseFloat(txt);
-                if (!isNaN(parsed) && parsed > 0) valorBase = parsed;
+          openPagamentoModal({
+            id: idSel,
+            valorInicial: d.valor_total,
+            statusAoConfirmar: 'concluido',
+            dadosOS: d,
+            onDone: (valor, metodo, extra) => {
+              if (extra && extra.cancel) {
+                this.value = d.status || 'pendente';
+                return;
               }
+              d.status = 'concluido';
+              d.valor_total = valor;
             }
-
-            valorAtualTxt.textContent = `Valor atual (${tipo_pagamento.toUpperCase()}): ${fmtBRv(valorBase)}`;
-            valorBox.classList.remove('hidden');
-
-            modal.querySelector('#btnConfirmarValor').onclick = () => confirmarPagamento(valorBase);
-            modal.querySelector('#btnEditarValor').onclick = () => {
-              editBox.classList.remove('hidden');
-              inputNovoValor.focus();
-            };
-            modal.querySelector('#btnSalvarValor').onclick = () => {
-              const novo = parseFloat(inputNovoValor.value || 0);
-              if (isNaN(novo) || novo <= 0) { alert('Digite um valor válido.'); return; }
-              confirmarPagamento(novo);
-            };
           });
-
-          function confirmarPagamento(valorConfirmado) {
-            if (!valorConfirmado || valorConfirmado <= 0) {
-              alert('O valor não pode ser zero. Edite o valor antes de confirmar.');
-              return;
-            }
-            const valorNum = parseFloat(String(valorConfirmado).replace(',', '.'));
-            if (isNaN(valorNum) || valorNum <= 0) { alert('Valor inválido.'); return; }
-            const valorFmt = valorNum.toFixed(2);
-
-            (async () => {
-              try {
-                await fetch('includes/atualizar_status.php', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: new URLSearchParams({
-                    id, status: 'concluido', tipo_pagamento, valor_confirmado: valorFmt
-                  })
-                });
-
-                await fetch('includes/atualizar_os.php', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: `id=${id}&campo=valor_total&valor=${valorFmt}`
-                });
-
-                await fetch('includes/atualizar_os.php', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: `id=${id}&campo=metodo_pagamento&valor=${encodeURIComponent(tipo_pagamento||'')}`
-                });
-
-                await fetch('includes/atualizar_os.php', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                  body: `id=${id}&campo=pago&valor=1`
-                });
-
-                d['valor_total'] = valorFmt;
-                d.metodo_pagamento = tipo_pagamento || '';
-                d.pago = 1;
-
-                updateViewField('valor_total', valorFmt);
-
-                const chkPago = document.getElementById('viewPago');
-                if (chkPago) {
-                  chkPago.checked = true;
-                  chkPago.classList.add('flash-success');
-                  setTimeout(() => chkPago.classList.remove('flash-success'), 700);
-                }
-
-                const selMetodo = document.getElementById('viewMetodoPagamento');
-                if (selMetodo) {
-                  selMetodo.value = tipo_pagamento || '';
-                  selMetodo.classList.add('flash-success');
-                  setTimeout(() => selMetodo.classList.remove('flash-success'), 700);
-                }
-
-                const selStatus = document.getElementById('viewStatusSelect');
-                if (selStatus) {
-                  selStatus.value = 'concluido';
-                  selStatus.classList.add('flash-success');
-                  setTimeout(() => selStatus.classList.remove('flash-success'), 700);
-                }
-
-                updateCardFromField(parseInt(id), 'status', 'concluido');
-                updateCardFromField(parseInt(id), 'pago', 1);
-                updateCardFromField(parseInt(id), 'valor_total', valorFmt);
-
-                valorAtualTxt.textContent = `✅ Valor confirmado: ${fmtBRv(valorFmt)}`;
-                valorResumo.innerHTML = `<strong>Total pago:</strong> ${fmtBRv(valorFmt)}`;
-                valorBox.classList.add('flash-success');
-                setTimeout(() => valorBox.classList.remove('flash-success'), 800);
-
-                setTimeout(() => {
-                  modal.classList.remove('show');
-                  setTimeout(() => modal.remove(), 250);
-                }, 600);
-              } catch (err) {
-                console.error('Erro ao confirmar pagamento:', err);
-                alert('Erro de comunicação com o servidor.');
-              }
-            })();
-          }
-
           return;
         }
 
-        // Outros status → atualiza status e zera pago visualmente
+        // Outros status: só atualiza status, NÃO mexe em "pago"
         fetch('includes/atualizar_status.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `id=${id}&status=${status}`
-        }).then(() => {
-          updateCardFromField(parseInt(id, 10), 'status', status);
-          updateCardFromField(parseInt(id, 10), 'pago', 0);
-          updateViewField('pago', 0);
-          fetch('includes/atualizar_os.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ id, campo: 'pago', valor: 0 })
-          });
+          method:'POST',
+          headers:{'Content-Type':'application/x-www-form-urlencoded'},
+          body: new URLSearchParams({ id:idSel, status })
+        })
+        .then(async resp => {
+          if (!resp.ok) {
+            const msg = await resp.text();
+            alert(msg || 'Erro ao atualizar status.');
+            this.value = d.status || 'pendente';
+            return;
+          }
+          d.status = status;
+          updateCardFromField(parseInt(idSel,10), 'status', status);
+        })
+        .catch(err => {
+          console.error(err);
+          alert('Erro ao atualizar status.');
+          this.value = d.status || 'pendente';
         });
       };
+
     } catch (err) {
       console.error(err);
       alert('Erro ao carregar detalhes da O.S.');
     }
   }
   window.loadView = loadView;
+  async function gerarEImprimirOS(id){
+    try {
+      // Gera e salva/atualiza o PDF
+      await fetch(`includes/gerar_pdf_os.php?id=${id}&save=1`, {
+        cache: 'no-store'
+      });
 
-  // ======== EDIT ========
-  async function loadEdit(id){
-    const r = await fetch('includes/get_os.php?id='+encodeURIComponent(id), {headers:{'X-Requested-With':'fetch'}});
-    const j = await r.json();
-    if (!j.ok) { alert(j.msg||'Falha ao carregar.'); return; }
-    const d = j.data;
-    $('#editId').textContent = '#'+String(d.id).padStart(5,'0');
-    $('#editIdInput').value = d.id;
-    $('#f_nome').value = d.nome||'';
-    $('#f_modelo').value = d.modelo||'';
-    $('#f_servico').value = d.servico||'';
-    $('#f_observacao').value = d.observacao||'';
-    $('#f_pago').value = (parseFloat(d.pago||0)).toFixed(2).replace('.',',');
-    $('#f_data').value = d.data_entrada||'';
-    $('#f_hora').value = (d.hora_entrada||'').slice(0,5);
-    $('#f_status').value = d.status||'pendente';
-    openModal($('#modalEdit'));
-  }
-
-  async function postUpdate(id, campo, valor){
-    const body = new URLSearchParams({id, campo, valor});
-    const r = await fetch('includes/atualizar_os.php', {
-      method: 'POST', headers: {'Content-Type':'application/x-www-form-urlencoded'}, body
-    });
-    return r.json();
-  }
-
-  $('#btnSalvarEdit').addEventListener('click', async ()=>{
-    const id = $('#editIdInput').value;
-    const payloads = [
-      ['nome', $('#f_nome').value.trim()],
-      ['modelo', $('#f_modelo').value.trim()],
-      ['servico', $('#f_servico').value.trim()],
-      ['observacao', $('#f_observacao').value.trim()],
-      ['pago', ($('#f_pago').value||'0').replace(/\./g,'').replace(',','.')],
-      ['data_entrada', $('#f_data').value],
-      ['hora_entrada', $('#f_hora').value],
-      ['status', $('#f_status').value]
-    ];
-    for (const [campo, valor] of payloads) {
-      const j = await postUpdate(id, campo, valor);
-      if (!j.ok) { alert(j.msg||('Falha ao salvar '+campo)); return; }
+      // Abre direto para imprimir
+      const url = `includes/gerar_pdf_os.php?id=${id}&print=1&_=${Date.now()}`;
+      window.open(url, '_blank');
+    } catch (e) {
+      console.error('Erro ao gerar/imprimir OS', e);
+      alert('Não foi possível gerar/imprimir a O.S.');
     }
-    closeModal($('#modalEdit'));
-    fetchList(qsParams());
-  });
+  }
 
   // ======== EXCLUIR ========
   async function deleteOS(id) {
     const card = document.querySelector(`.os-card[data-id="${id}"]`);
-    if (!confirm('Tem certeza que deseja excluir a O.S. #' + String(id).padStart(5, '0') + ' ?')) return;
+    if (!confirm('Tem certeza que deseja excluir a O.S. #' + String(id).padStart(5,'0') + ' ?')) return;
 
     try {
       const r = await fetch('includes/deletar_os.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        method:'POST',
+        headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ id })
       });
       const j = await r.json();
-
       if (!j.ok) { alert(j.msg || 'Erro ao excluir.'); return; }
 
       if (card) {
         card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
         card.style.opacity = '0';
         card.style.transform = 'scale(0.97)';
-        setTimeout(() => card.remove(), 300);
+        setTimeout(()=> card.remove(), 300);
       }
 
-      setTimeout(() => { fetchList(qsParams()); }, 400);
+      setTimeout(()=> fetchList(qsParams()), 400);
     } catch (err) {
       console.error(err);
       alert('Erro ao excluir O.S.');
@@ -1341,21 +1275,56 @@ if (isset($Q['partial']) && $Q['partial'] == '1') {
   }
 
   // ======== Modais genéricos ========
-  function openModal(modal){ modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false'); }
-  function closeModal(modal){ modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); }
-  $$('.modal [data-close]').forEach(b=> b.addEventListener('click', e=> closeModal(e.target.closest('.modal'))));
-  $$('.modal').forEach(m=> m.addEventListener('click', e=>{ if(e.target===m) closeModal(m); }));
+  function openModal(modal){
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden','false');
+  }
+  function closeModal(modal){
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden','true');
+  }
+
+  $$('.modal [data-close]').forEach(b=>{
+    b.addEventListener('click', e=>{
+      closeModal(e.target.closest('.modal'));
+    });
+  });
+  $$('.modal').forEach(m=>{
+    m.addEventListener('click', e=>{
+      if (e.target === m) closeModal(m);
+    });
+  });
 
   function wireCards(){
-    $$('.os-card .btn.ver').forEach(b=>{
-      b.addEventListener('click', ()=> loadView(b.closest('.os-card').dataset.id));
+    // Ver
+    $$('.os-card .btn.ver').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.closest('.os-card').dataset.id;
+        loadView(id);
+      });
     });
-    $$('.os-card .btn.excluir').forEach(b=>{
-      b.addEventListener('click', ()=> deleteOS(b.closest('.os-card').dataset.id));
+
+    // Imprimir
+    $$('.os-card .btn.print').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.closest('.os-card').dataset.id;
+        gerarEImprimirOS(id);
+      });
+    });
+
+    // Excluir
+    $$('.os-card .btn.excluir').forEach(b => {
+      b.addEventListener('click', () => {
+        const id = b.closest('.os-card').dataset.id;
+        deleteOS(id);
+      });
     });
   }
 
+
   // Inicial
-  wireCards(); wirePager(); wirePP();
+  wireCards();
+  wirePager();
+  wirePP();
 })();
 </script>

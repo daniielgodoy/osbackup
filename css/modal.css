@@ -291,14 +291,7 @@
   line-height: 1.4;
   margin: 5px 0 15px 0;
 }
-.servicos-scroll {
-  max-height: 250px;          /* altura reduzida */
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: #555 #1f2329;
-}
+
 /* Modal de seleção de pagamento */
 .modal-pagamento {
   position: fixed;

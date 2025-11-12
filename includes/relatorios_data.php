@@ -56,6 +56,16 @@ try {
   $vmin      = (isset($_GET['vmin']) && $_GET['vmin'] !== '') ? (float)$_GET['vmin'] : null;
   $vmax      = (isset($_GET['vmax']) && $_GET['vmax'] !== '') ? (float)$_GET['vmax'] : null;
 
+  // 🔹 Filtro opcional por responsável (IDs separados por vírgula)
+  $resp_ids = [];
+  if (!empty($_GET['resp'])) {
+    foreach (explode(',', $_GET['resp']) as $rid) {
+      $rid = (int)trim($rid);
+      if ($rid > 0) $resp_ids[] = $rid;
+    }
+    $resp_ids = array_values(array_unique($resp_ids));
+  }
+
   // Data de conclusão (prioriza atualizado_em, senão data_entrada)
   $dtConclusao = "DATE(COALESCE(atualizado_em, data_entrada))";
 
@@ -99,12 +109,19 @@ try {
     $whereCommon[] = "status IN ($place)";
     foreach ($statuses as $s) { $typesCommon .= 's'; $bindCommon[] = $s; }
   }
-  if ($pago !== null)     { $whereCommon[] = "pago = ?";           $typesCommon .= 'i'; $bindCommon[] = $pago; }
-  if ($q_servico !== '')  { $whereCommon[] = "servico LIKE ?";     $typesCommon .= 's'; $bindCommon[] = "%$q_servico%"; }
-  if ($q_nome !== '')     { $whereCommon[] = "nome LIKE ?";        $typesCommon .= 's'; $bindCommon[] = "%$q_nome%"; }
-  if ($vmin !== null)     { $whereCommon[] = "($SUM_SELECTED) >= ?"; $typesCommon .= 'd'; $bindCommon[] = $vmin; }
-  if ($vmax !== null)     { $whereCommon[] = "($SUM_SELECTED) <= ?"; $typesCommon .= 'd'; $bindCommon[] = $vmax; }
+  if ($pago !== null)     { $whereCommon[] = "pago = ?";              $typesCommon .= 'i'; $bindCommon[] = $pago; }
+  if ($q_servico !== '')  { $whereCommon[] = "servico LIKE ?";        $typesCommon .= 's'; $bindCommon[] = "%$q_servico%"; }
+  if ($q_nome !== '')     { $whereCommon[] = "nome LIKE ?";           $typesCommon .= 's'; $bindCommon[] = "%$q_nome%"; }
+  if ($vmin !== null)     { $whereCommon[] = "($SUM_SELECTED) >= ?";  $typesCommon .= 'd'; $bindCommon[] = $vmin; }
+  if ($vmax !== null)     { $whereCommon[] = "($SUM_SELECTED) <= ?";  $typesCommon .= 'd'; $bindCommon[] = $vmax; }
   if ($metodos)           { $whereCommon[] = "($SUM_SELECTED) > 0"; }
+
+  // 🔹 filtro por responsável (se houver)
+  if ($resp_ids) {
+    $place = implode(',', array_fill(0, count($resp_ids), '?'));
+    $whereCommon[] = "responsavel_id IN ($place)";
+    foreach ($resp_ids as $rid) { $typesCommon .= 'i'; $bindCommon[] = $rid; }
+  }
 
   $WHERE_COMMON = $whereCommon ? (' AND '.implode(' AND ', $whereCommon)) : '';
 
@@ -180,7 +197,7 @@ try {
     while ($d <= $end) { $labels[] = $d->format('Y-m'); $d->modify('+1 month'); }
   } elseif ($group === 'semana') {
     $d = clone $start;
-    $w = (int)$d->format('N'); if ($w > 1) { $d->modify('-'.($w-1).' days'); } // até segunda
+    $w = (int)$d->format('N'); if ($w > 1) { $d->modify('-'.($w-1).' days'); }
     while ($d <= $end) {
       $labels[] = sprintf('%s-W%02d', $d->format('o'), (int)$d->format('W'));
       $d->modify('+7 days');
@@ -426,16 +443,192 @@ try {
     $met = $mapMet[$lab] ?? ['dinheiro'=>0,'pix'=>0,'credito'=>0,'debito'=>0];
     $resumo_diario[] = [
       'periodo'    => $lab,
-      'criadas'    => $mapCriadas[$lab]            ?? 0,
+      'criadas'    => $mapCriadas[$lab]              ?? 0,
       'concluidas' => $mapResumo[$lab]['concluidas'] ?? 0,
       'dinheiro'   => $met['dinheiro'],
       'pix'        => $met['pix'],
       'credito'    => $met['credito'],
       'debito'     => $met['debito'],
-      'faturado'   => $mapResumo[$lab]['faturado'] ?? 0.0,
-      'ticket'     => $mapResumo[$lab]['ticket']   ?? 0.0,
+      'faturado'   => $mapResumo[$lab]['faturado']   ?? 0.0,
+      'ticket'     => $mapResumo[$lab]['ticket']     ?? 0.0,
       'tempo_h'    => 0.0
     ];
+  }
+
+  /* ========= 🔶 BLOCO: FUNCIONÁRIOS ========= */
+  // Mapa de funcionários do tenant/loja (id => nome)
+  $whereUsers = "WHERE tenant_id = ?";
+  $typesUsers = 'i';
+  $bindUsers  = [ $tenant_id ];
+  if ($shop_id === null) {
+    $whereUsers .= " AND (shop_id IS NULL)";
+  } else {
+    $whereUsers .= " AND shop_id = ?";
+    $typesUsers .= 'i';
+    $bindUsers[] = $shop_id;
+  }
+  if ($resp_ids) {
+    $place = implode(',', array_fill(0, count($resp_ids), '?'));
+    $whereUsers .= " AND id IN ($place)";
+    foreach ($resp_ids as $rid) { $typesUsers .= 'i'; $bindUsers[] = $rid; }
+  }
+
+  $stmt = $conn->prepare("SELECT id, nome FROM login $whereUsers");
+  bind_all($stmt, $typesUsers, $bindUsers);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  $func_meta = []; // id => nome
+  while ($u = $res->fetch_assoc()) { $func_meta[(int)$u['id']] = $u['nome'] ?: ('#'.$u['id']); }
+  $stmt->close();
+
+  // 1) Mais OS concluídas por responsável (no período)
+  $stmt = $conn->prepare("
+    SELECT responsavel_id AS rid, COUNT(*) AS qtd
+    FROM ordens_servico
+    $WHERE_CONC
+    GROUP BY responsavel_id
+    HAVING rid IS NOT NULL AND rid > 0
+    ORDER BY qtd DESC
+    LIMIT 20
+  ");
+  bind_all($stmt, $typesConc, $bindConc);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  $func_mais_os = [];
+  while ($r = $res->fetch_assoc()) {
+    $rid = (int)($r['rid'] ?? 0);
+    if ($rid <= 0) continue;
+    $func_mais_os[] = [
+      'id'   => $rid,
+      'nome' => $func_meta[$rid] ?? ('#'.$rid),
+      'os'   => (int)$r['qtd']
+    ];
+  }
+  $stmt->close();
+
+  // 2) Ticket médio por responsável (concluídas no período)
+  $stmt = $conn->prepare("
+    SELECT responsavel_id AS rid,
+           COUNT(*) AS concluidas,
+           SUM($SUM_SELECTED) AS faturado,
+           (CASE WHEN COUNT(*)>0 THEN SUM($SUM_SELECTED)/COUNT(*) ELSE 0 END) AS ticket
+    FROM ordens_servico
+    $WHERE_CONC
+    GROUP BY responsavel_id
+    HAVING rid IS NOT NULL AND rid > 0
+    ORDER BY ticket DESC
+    LIMIT 20
+  ");
+  bind_all($stmt, $typesConc, $bindConc);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  $func_ticket = [];
+  while ($r = $res->fetch_assoc()) {
+    $rid = (int)($r['rid'] ?? 0);
+    if ($rid <= 0) continue;
+    $func_ticket[] = [
+      'id'         => $rid,
+      'nome'       => $func_meta[$rid] ?? ('#'.$rid),
+      'ticket'     => (float)($r['ticket'] ?? 0),
+      'concluidas' => (int)($r['concluidas'] ?? 0),
+      'faturado'   => (float)($r['faturado'] ?? 0),
+    ];
+  }
+  $stmt->close();
+
+  // 3) OS por status (CRIADAS no período) por responsável
+  $stmt = $conn->prepare("
+    SELECT responsavel_id AS rid, status, COUNT(*) AS qtd
+    FROM ordens_servico
+    $WHERE_CRIADAS
+    GROUP BY responsavel_id, status
+  ");
+  bind_all($stmt, $typesCriadas, $bindCriadas);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  $status_set = []; // todos os status encontrados
+  $per_func = [];   // rid => status => qtd
+  while ($r = $res->fetch_assoc()) {
+    $rid = (int)($r['rid'] ?? 0);
+    if ($rid <= 0) continue;
+    $st  = (string)($r['status'] ?? 'indefinido');
+    $q   = (int)($r['qtd'] ?? 0);
+    $status_set[$st] = true;
+    if (!isset($per_func[$rid])) $per_func[$rid] = [];
+    $per_func[$rid][$st] = $q;
+  }
+  $stmt->close();
+
+  $status_labels = array_values(array_keys($status_set));
+  sort($status_labels);
+  $func_status_series = [];
+  foreach ($per_func as $rid => $mapSt) {
+    $func_status_series[] = [
+      'id'   => $rid,
+      'nome' => $func_meta[$rid] ?? ('#'.$rid),
+      'data' => array_map(fn($s)=> (int)($mapSt[$s] ?? 0), $status_labels)
+    ];
+  }
+
+  // 4) 🔔 Feed de hoje por funcionário (última atualização do dia)
+  //    Usa ordens_servico_logs, filtrando por tenant/shop e data = hoje
+  $feedHoje = [];
+  // Confere existência da tabela de logs
+  $hasLogs = false;
+  if ($resTbl = $conn->query("SHOW TABLES LIKE 'ordens_servico_logs'")) {
+    $hasLogs = $resTbl->num_rows > 0;
+    $resTbl->free();
+  }
+  if ($hasLogs) {
+    $whereLogs = "WHERE tenant_id = ? AND DATE(criado_em) = CURDATE()";
+    $typesLogs = 'i';
+    $bindLogs  = [ $tenant_id ];
+    if ($shop_id === null) {
+      $whereLogs .= " AND shop_id IS NULL";
+    } else {
+      $whereLogs .= " AND shop_id = ?";
+      $typesLogs .= 'i';
+      $bindLogs[] = $shop_id;
+    }
+    // Se resp_ids foi passado, restringe aos usuários informados
+    if ($resp_ids) {
+      $place = implode(',', array_fill(0, count($resp_ids), '?'));
+      $whereLogs .= " AND user_id IN ($place)";
+      foreach ($resp_ids as $rid) { $typesLogs .= 'i'; $bindLogs[] = $rid; }
+    }
+
+    // Pega a ÚLTIMA ação de cada user no dia (ORDER BY criado_em desc e agrupa em PHP)
+    $stmt = $conn->prepare("
+      SELECT user_id, os_id, acao, status_antigo, status_novo, metodo_pagamento, valor_total, criado_em
+      FROM ordens_servico_logs
+      $whereLogs
+      ORDER BY user_id ASC, criado_em DESC
+      LIMIT 500
+    ");
+    bind_all($stmt, $typesLogs, $bindLogs);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $vistos = []; // user_id => true
+    while ($row = $res->fetch_assoc()) {
+      $uid = (int)($row['user_id'] ?? 0);
+      if ($uid <= 0) continue;
+      if (isset($vistos[$uid])) continue; // já temos a última
+      $vistos[$uid] = true;
+
+      $feedHoje[] = [
+        'user_id' => $uid,
+        'nome'    => $func_meta[$uid] ?? ('#'.$uid),
+        'os_id'   => (int)($row['os_id'] ?? 0),
+        'hora'    => date('H:i', strtotime($row['criado_em'] ?? 'now')),
+        'acao'    => (string)($row['acao'] ?? ''),
+        'status_novo' => (string)($row['status_novo'] ?? ''),
+        'metodo_pagamento' => (string)($row['metodo_pagamento'] ?? ''),
+        'valor_total' => (float)($row['valor_total'] ?? 0),
+      ];
+    }
+    $stmt->close();
+    // Ordena por hora desc (mais recente no topo visual)
+    usort($feedHoje, fn($a,$b)=> strcmp($b['hora'],$a['hora']));
   }
 
   echo json_encode([
@@ -455,6 +648,16 @@ try {
     'top_servicos'           => $top_servicos,
     'top_clientes'           => $top_clientes,
     'resumo_diario'          => $resumo_diario,
+
+    // 🔶 Funcionários
+    'funcionarios_meta'  => $func_meta,            // { id:nome }
+    'func_mais_os'       => $func_mais_os,         // [{id,nome,os}]
+    'func_ticket'        => $func_ticket,          // [{id,nome,ticket,concluidas,faturado}]
+    'func_status'        => [
+      'labels' => $status_labels,                  // ['pendente','em_andamento',...]
+      'series' => $func_status_series              // [{id,nome,data:[...]}, ...]
+    ],
+    'func_feed_hoje'     => $feedHoje              // [{user_id,nome,os_id,hora,acao,status_novo,metodo_pagamento,valor_total}]
   ], JSON_UNESCAPED_UNICODE);
 
 } catch (Throwable $e) {

@@ -1,6 +1,15 @@
 <?php
+// garante que a sessão exista
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
 // garante que $pagina está definido em cada página antes de incluir a navbar
 $pagina = $pagina ?? '';
+
+// papel do usuário
+$role    = $_SESSION['role'] ?? 'member';
+$isAdmin = ($role === 'admin');
 ?>
 <nav class="navbar">
   <div class="nav-left">
@@ -10,11 +19,29 @@ $pagina = $pagina ?? '';
   </div>
 
   <ul class="nav-center">
-    <li class="<?= $pagina==='painel'    ? 'active' : '' ?>"><a href="index.php">Painel</a></li>
-    <li class="<?= $pagina==='os'        ? 'active' : '' ?>"><a href="os.php">Ordens de Serviço</a></li>
-    <li class="<?= $pagina==='clientes'  ? 'active' : '' ?>"><a href="clientes.php">Clientes</a></li>
-    <li class="<?= $pagina==='relatorios'? 'active' : '' ?>"><a href="relatorios.php">Relatórios</a></li>
-    <li class="<?= $pagina==='config'    ? 'active' : '' ?>"><a href="config.php">Configurações</a></li>
+    <!-- Sempre visíveis para qualquer usuário logado -->
+    <li class="<?= $pagina==='painel' ? 'active' : '' ?>">
+      <a href="index.php">Painel</a>
+    </li>
+    <li class="<?= $pagina==='os' ? 'active' : '' ?>">
+      <a href="os.php">Ordens de Serviço</a>
+    </li>
+
+    <!-- Somente ADMIN vê esses menus -->
+    <?php if ($isAdmin): ?>
+      <li class="<?= $pagina==='clientes'   ? 'active' : '' ?>">
+        <a href="clientes.php">Clientes</a>
+      </li>
+      <li class="<?= $pagina==='relatorios' ? 'active' : '' ?>">
+        <a href="relatorios.php">Relatórios</a>
+      </li>
+      <li class="<?= $pagina==='config'     ? 'active' : '' ?>">
+        <a href="config.php">Configurações</a>
+      </li>
+      <li class="<?= $pagina==='equipe'     ? 'active' : '' ?>">
+        <a href="equipe.php">Equipe</a>
+      </li>
+    <?php endif; ?>
   </ul>
 
   <div class="nav-right">
@@ -24,19 +51,16 @@ $pagina = $pagina ?? '';
       <i class="fa-solid fa-moon" id="themeIcon"></i>
     </button>
 
-    <!-- Botão de Logout -->
     <button class="icon-btn" id="btnLogout" title="Sair">
       <i class="fa-solid fa-right-from-bracket"></i>
     </button>
 
-    <!-- Fallback sem JS (caminho correto) -->
     <a href="includes/logout.php" class="sr-only" aria-hidden="true" tabindex="-1">Sair</a>
   </div>
 </nav>
 
 <script>
 (function(){
-  // ===== Tema =====
   function whenReady(fn){
     if (window.V10Theme && typeof window.V10Theme.get === 'function') return fn();
     let tries = 0;
@@ -52,7 +76,9 @@ $pagina = $pagina ?? '';
 
     function paintIcon(mode){
       if (!icon) return;
-      icon.className = (mode === 'light') ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      icon.className = (mode === 'light')
+        ? 'fa-solid fa-sun'
+        : 'fa-solid fa-moon';
     }
     paintIcon(window.V10Theme.get());
 
@@ -68,11 +94,10 @@ $pagina = $pagina ?? '';
     });
   });
 
-  // ===== Logout (sem AJAX — redireciona direto) =====
+  // Logout simples
   document.addEventListener('click', (e)=>{
     const btn = e.target.closest('#btnLogout');
     if(!btn) return;
-    // Se seu projeto está em /os na raiz do Apache, pode usar absoluto: window.location.href = '/os/includes/logout.php';
     window.location.href = 'includes/logout.php?next=login.php';
   });
 })();

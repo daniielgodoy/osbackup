@@ -1,4 +1,8 @@
 /* ===== BASE ===== */
+html,
+body {
+  height: 100%;
+}
 body {
   margin: 0;
   font-family: "Poppins", sans-serif;
@@ -763,4 +767,227 @@ html[data-theme="light"] .servicos-scroll::-webkit-scrollbar-thumb{
 }
 html[data-theme="light"] .servicos-scroll::-webkit-scrollbar-thumb:hover{
   background: #9aa9bf;
+}
+/* === LATERAL: SERVIÇOS PREENCHENDO ATÉ O FINAL DA COLUNA === */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - var(--navbar-height)); /* fixa altura */
+  min-height: 0; /* permite filhos criarem scroll interno */
+}
+
+
+/* grid ocupa todo o espaço disponível da .content */
+.grid-layout {
+  flex: 1 1 auto;
+  min-height: 0; /* permite os filhos criarem scroll interno */
+}
+
+/* coluna lateral é flex vertical e pode encolher */
+.side-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;            /* fundamental pro filho com flex:1 funcionar */
+}
+
+/* card de serviços ocupa TODA a altura da coluna (quando for o único) */
+.side-column .servicos-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* área scrollável ocupa TODO o espaço livre dentro do card */
+#servicos.servicos-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.grid-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+  align-items: stretch;
+  min-height: 0; /* importantíssimo para não forçar o grid a crescer */
+}
+
+.side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  min-height: 0;
+}
+
+.side-column .servicos-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Scroll só dentro do bloco de serviços */
+#servicos.servicos-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+/* ===== FEED: Últimas atualizações (somente funcionários) ===== */
+
+.feed-card {
+  background-color: #232832;
+  border-radius: 12px;
+  padding: 16px 16px 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+  flex: 1;           /* ocupa o espaço vazio abaixo dos cards */
+  min-height: 0;     /* permite scroll interno */
+}
+
+.feed-card h4 {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feed-card h4 i {
+  font-size: 1rem;
+  color: #4db3ff;
+}
+
+.feed-list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0 0;
+  flex: 1;
+  overflow-y: auto;               /* scroll só se passar da área */
+}
+
+/* item da timeline */
+.feed-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.8rem;
+  color: #cbd5f5;
+}
+
+.feed-list li + li {
+  border-top: 1px solid rgba(148,163,253,0.06);
+  margin-top: 2px;
+  padding-top: 6px;
+}
+
+/* bolinha da timeline */
+.feed-list .bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #4db3ff;
+  margin-top: 6px;
+  box-shadow: 0 0 0 2px rgba(77,179,255,0.25);
+}
+
+.feed-text {
+  line-height: 1.4;
+}
+
+/* estado vazio */
+.feed-empty {
+  color: #6b7280;
+  font-style: italic;
+}
+/* Coluna principal ocupa todo o espaço vertical disponível */
+.main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  flex: 1 1 auto;   /* estica dentro do grid */
+  min-height: 0;    /* permite filho com scroll interno */
+}
+
+/* Cards de status ficam com altura natural (não esticam) */
+.cards-grid {
+  flex: 0 0 auto;
+}
+
+/* Feed ocupa todo o restante da coluna, com scroll interno se precisar */
+.feed-card {
+  flex: 1 1 260px;  /* base um pouco maior + ocupa o espaço livre */
+  min-height: 200px;
+  max-height: none;
+}
+/* Cabeçalho da listagem (lado direito) */
+.servicos-header-list,
+.side-column .servicos-header-list{
+  display: grid !important;
+  grid-template-columns: 60px 1.2fr 1fr 1.4fr 120px 36px; /* + coluna do ícone */
+  align-items: center;
+  background: #1f252d;
+  border-bottom: 1px solid #2e343d;
+  border-radius: 6px 6px 0 0;
+  padding: 6px 10px 6px 14px;
+  font-weight: 600;
+  font-size: 12px;
+  color: #e6ecf1;
+}
+
+/* Linha da lista (mesma grade do header) */
+.lista-servicos li{
+  display: grid;
+  grid-template-columns: 60px 1.2fr 1fr 1.4fr 120px 36px; /* última coluna = ações */
+  align-items: center;
+  background: #1f2329;
+  border: 1px solid #2e343d;
+  border-radius: 6px;
+  padding: 5px 10px 5px 14px;
+  font-size: 12px;
+  color: #eaeaea;
+  transition: all .2s ease;
+  position: relative;
+  overflow: hidden;
+  min-height: 30px;
+}
+/* Botão de impressão da OS na lateral */
+.os-print-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid #2e343d;
+  background: #232832;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 6px;
+  transition: all 0.15s ease;
+}
+
+.os-print-btn i {
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.os-print-btn:hover {
+  background: #4db3ff;
+  color: #ffffff;
+  border-color: #4db3ff;
+  transform: translateY(-1px);
+}
+
+.os-print-btn:active {
+  transform: translateY(0);
 }

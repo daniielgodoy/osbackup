@@ -67,7 +67,10 @@ $valor_cartao_form       = (float) post('valor_cartao', 0);
 
 /* ========= Validações mínimas ========= */
 if ($nome === '' || $telefone === '' || $modelo === '' || $servico === '' || $data === '' || $hora === '') {
-  json_exit(['ok' => false, 'msg' => 'Campos obrigatórios ausentes. Preencha Nome, Telefone, Modelo, Serviço, Data e Hora.'], 400);
+  json_exit([
+    'ok'  => false,
+    'msg' => 'Campos obrigatórios ausentes. Preencha Nome, Telefone, Modelo, Serviço, Data e Hora.'
+  ], 400);
 }
 
 // Monta "endereco" se veio detalhado mas o oculto não
@@ -137,6 +140,7 @@ try {
 
     // 2) Se ainda não há client_id, cria um novo (no contexto atual)
     if ($client_id <= 0 && ($nome !== '' || onlyDigits($cpf) !== '' || $telefone !== '')) {
+
       if ($cpf !== '') {
         $where = "cpf = ?";
         $types = 's';
@@ -200,7 +204,7 @@ try {
     }
   }
 
-  /* ----- Conversão de valores para a OS (prioriza 2 colunas) ----- */
+  /* ----- Conversão de valores para a OS ----- */
   // Inicializa todos como 0
   $valor_dinheiro_pix = 0.00;
   $valor_cartao       = 0.00;
@@ -208,17 +212,17 @@ try {
   $valor_dinheiro     = 0.00;
   $valor_credito      = 0.00;
   $valor_debito       = 0.00;
+  $valor_total        = 0.00; // 🔹 NÃO definimos total a partir dos campos na criação (pós-pagamento apenas)
 
   if ($prefer_2cols) {
-    // ✅ Esquema 2 colunas (o que você quer)
+    // Esquema 2 colunas: só registramos o que veio, sem somar em valor_total
     $valor_dinheiro_pix = max(0.0, $valor_dinheiro_pix_form);
     $valor_cartao       = max(0.0, $valor_cartao_form);
-    $valor_total        = $valor_dinheiro_pix + $valor_cartao;
   } else {
-    // 🔁 Fallback 4 colunas
+    // Fallback 4 colunas: também só preenchemos parciais
     $valor_dinheiro = max(0.0, $valor_dinheiro_pix_form); // entra como dinheiro
     $valor_credito  = max(0.0, $valor_cartao_form);       // entra como crédito
-    $valor_total    = $valor_pix + $valor_dinheiro + $valor_credito + $valor_debito;
+    // $valor_total continua 0.00 aqui
   }
 
   /* ----- Monta INSERT da OS (dinâmico) ----- */
@@ -260,9 +264,10 @@ try {
     'valor_credito'  => $valor_credito,
     'valor_debito'   => $valor_debito,
 
+    // 🔹 valor_total inicial 0.00 (será atualizado somente no fluxo de pagamento)
     'valor_total'    => $valor_total,
 
-    // Método e pago ficam em aberto na criação
+    // Método e pago em aberto na criação
     'metodo_pagamento' => null,
     'pago'             => 0,
 
@@ -277,7 +282,11 @@ try {
     if (!hasCol($conn, $TAB_OS, $col)) continue; // só grava se a coluna existir
 
     $osCols[] = "`{$col}`";
-    if ($val === null) { $ph[] = 'NULL'; continue; }
+
+    if ($val === null) {
+      $ph[] = 'NULL';
+      continue;
+    }
 
     if (in_array($col, [
       'valor_pix','valor_dinheiro','valor_credito','valor_debito',
@@ -297,7 +306,9 @@ try {
 
   $sql = "INSERT INTO `{$TAB_OS}` (".implode(',', $osCols).") VALUES (".implode(',', $ph).")";
   $stmt = $conn->prepare($sql);
-  if ($typesO !== '') $stmt->bind_param($typesO, ...$valsO);
+  if ($typesO !== '') {
+    $stmt->bind_param($typesO, ...$valsO);
+  }
   $stmt->execute();
   $newId = (int)$stmt->insert_id;
   $stmt->close();

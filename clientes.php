@@ -11,6 +11,12 @@
 
 /* ===== Segurança & contexto ANTES de qualquer saída ===== */
 require_once __DIR__ . '/includes/auth_guard.php';
+$role = $_SESSION['role'] ?? 'member';
+if ($role !== 'admin') {
+    http_response_code(403);
+    exit('Acesso restrito ao administrador.');
+}
+
 $tenant_id = require_tenant();
 $shop_id   = current_shop_id(); // pode ser null
 

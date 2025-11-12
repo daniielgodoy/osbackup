@@ -1,89 +1,134 @@
 <?php
+// includes/atualizar_financeiro.php
 declare(strict_types=1);
 
 require_once __DIR__ . '/auth_guard.php';
-$tenant_id = require_tenant();
-$shop_id   = current_shop_id();
-
 require_once __DIR__ . '/mysqli.php';
+
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn->set_charset('utf8mb4');
 
-date_default_timezone_set('America/Sao_Paulo');
-$hoje = date('Y-m-d');
-
-/*
- Suporte a dois esquemas:
-  - Novo:  valor_pix, valor_dinheiro, valor_credito, valor_debito, valor_total
-  - Legado: valor_dinheiro_pix, valor_cartao (somamos como “pix/dinheiro” e “cartão”)
-*/
-$baseWhere = "WHERE tenant_id=? AND DATE(COALESCE(atualizado_em, data_entrada))=?";
-$params    = [$tenant_id, $hoje];
-$types     = 'is';
-if ($shop_id !== null) { $baseWhere .= " AND shop_id=?"; $types .= 'i'; $params[] = $shop_id; }
-
-$sqlNovo = "
- SELECT
-   COALESCE(SUM(valor_pix),0)      AS pix,
-   COALESCE(SUM(valor_dinheiro),0) AS dinheiro,
-   COALESCE(SUM(valor_credito),0)  AS credito,
-   COALESCE(SUM(valor_debito),0)   AS debito,
-   COALESCE(SUM(valor_total),0)    AS total
- FROM ordens_servico
- $baseWhere
-";
-
-$sqlLegado = "
- SELECT
-   COALESCE(SUM(valor_dinheiro_pix),0) AS dinpix,
-   COALESCE(SUM(valor_cartao),0)       AS cartao
- FROM ordens_servico
- $baseWhere
-";
-
-// Tenta novo esquema; se colunas não existirem, cai no legado
-function colExists(mysqli $c, string $col): bool {
-  $r = @$c->query("SHOW COLUMNS FROM `ordens_servico` LIKE '{$col}'");
-  return $r && $r->num_rows > 0;
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
 }
-
-$temNovo = colExists($conn,'valor_pix') || colExists($conn,'valor_total');
 
 header('Content-Type: application/json; charset=utf-8');
 
-if ($temNovo) {
-  $st = $conn->prepare($sqlNovo);
-  $st->bind_param($types, ...$params);
-  $st->execute();
-  $R = $st->get_result()->fetch_assoc() ?: [];
-  $st->close();
+// Contexto
+$tenant_id = require_tenant();
+$shop_id   = current_shop_id();
+$user_id   = (int)($_SESSION['user_id'] ?? 0);
+$role      = $_SESSION['role'] ?? 'member';
 
-  echo json_encode([
-    'ok'             => true,
-    'total_pix'      => number_format((float)($R['pix']??0), 2, ',', '.'),
-    'total_dinheiro' => number_format((float)($R['dinheiro']??0), 2, ',', '.'),
-    'total_credito'  => number_format((float)($R['credito']??0), 2, ',', '.'),
-    'total_debito'   => number_format((float)($R['debito']??0), 2, ',', '.'),
-    'total_pago'     => number_format((float)($R['total']??0), 2, ',', '.'),
-  ], JSON_UNESCAPED_UNICODE);
-  exit;
+$isAdmin  = ($role === 'admin');
+$isMember = ($role === 'member');
+
+if ($user_id <= 0) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Não autenticado.']);
+    exit;
 }
 
-// Legado
-$st = $conn->prepare($sqlLegado);
-$st->bind_param($types, ...$params);
-$st->execute();
-$R = $st->get_result()->fetch_assoc() ?: [];
-$st->close();
+$hoje = date('Y-m-d');
 
-$pixDin = (float)($R['dinpix'] ?? 0);
-$cartao = (float)($R['cartao'] ?? 0);
+/**
+ * Regra:
+ * - Sempre: tenant_id [+ shop_id se tiver]
+ * - Apenas OS CONCLUÍDAS no dia (data_conclusao OU atualizado_em OU data_entrada = hoje)
+ * - ADMIN: vê tudo do tenant[/shop]
+ * - MEMBER: vê SOMENTE OS dele (responsavel_id = user_id)
+ */
+
+$where  = "tenant_id = ? 
+           AND status = 'concluido'
+           AND DATE(COALESCE(data_conclusao, atualizado_em, data_entrada)) = ?";
+$types  = 'is';
+$params = [$tenant_id, $hoje];
+
+if (!empty($shop_id)) {
+    $where  .= " AND shop_id = ?";
+    $types  .= 'i';
+    $params[] = $shop_id;
+}
+
+if ($isMember) {
+    // 🔐 financeiro exclusivo do colaborador
+    $where  .= " AND responsavel_id = ?";
+    $types  .= 'i';
+    $params[] = $user_id;
+}
+
+// Helper
+function stmt_bind(mysqli_stmt $stmt, string $types, array $params): void {
+    if ($params) {
+        $stmt->bind_param($types, ...$params);
+    }
+}
+
+// Detecta colunas (compatibilidade)
+function hasCol(mysqli $c, string $tab, string $col): bool {
+    $r = $c->query("SHOW COLUMNS FROM `$tab` LIKE '$col'");
+    return ($r && $r->num_rows > 0);
+}
+
+$has_pix      = hasCol($conn, 'ordens_servico', 'valor_pix');
+$has_dinheiro = hasCol($conn, 'ordens_servico', 'valor_dinheiro');
+$has_credito  = hasCol($conn, 'ordens_servico', 'valor_credito');
+$has_debito   = hasCol($conn, 'ordens_servico', 'valor_debito');
+$has_total    = hasCol($conn, 'ordens_servico', 'valor_total');
+
+// Monta SELECT de forma segura
+$select = [];
+
+$select[] = $has_pix
+    ? "ROUND(SUM(COALESCE(valor_pix,0)),2) AS total_pix"
+    : "0 AS total_pix";
+
+$select[] = $has_dinheiro
+    ? "ROUND(SUM(COALESCE(valor_dinheiro,0)),2) AS total_dinheiro"
+    : "0 AS total_dinheiro";
+
+$select[] = $has_credito
+    ? "ROUND(SUM(COALESCE(valor_credito,0)),2) AS total_credito"
+    : "0 AS total_credito";
+
+$select[] = $has_debito
+    ? "ROUND(SUM(COALESCE(valor_debito,0)),2) AS total_debito"
+    : "0 AS total_debito";
+
+$select[] = $has_total
+    ? "ROUND(SUM(COALESCE(valor_total,0)),2) AS total"
+    : "ROUND(
+         SUM(
+           COALESCE(" . ($has_pix ? "valor_pix" : "0") . ",0) +
+           COALESCE(" . ($has_dinheiro ? "valor_dinheiro" : "0") . ",0) +
+           COALESCE(" . ($has_credito ? "valor_credito" : "0") . ",0) +
+           COALESCE(" . ($has_debito ? "valor_debito" : "0") . ",0)
+         ),2
+       ) AS total";
+
+$sql = "SELECT " . implode(",\n       ", $select) . "
+        FROM ordens_servico
+        WHERE $where";
+
+$stmt = $conn->prepare($sql);
+stmt_bind($stmt, $types, $params);
+$stmt->execute();
+$row = $stmt->get_result()->fetch_assoc() ?: [];
+$stmt->close();
+
+$total_pix      = (float)($row['total_pix']      ?? 0);
+$total_dinheiro = (float)($row['total_dinheiro'] ?? 0);
+$total_credito  = (float)($row['total_credito']  ?? 0);
+$total_debito   = (float)($row['total_debito']   ?? 0);
+$total          = (float)($row['total']          ?? 0);
+
+$fmt = fn(float $v): string => number_format($v, 2, ',', '.');
 
 echo json_encode([
-  'ok'             => true,
-  'total_pix'      => number_format($pixDin, 2, ',', '.'),
-  'total_dinheiro' => number_format(0, 2, ',', '.'),
-  'total_credito'  => number_format($cartao, 2, ',', '.'),
-  'total_debito'   => number_format(0, 2, ',', '.'),
-  'total_pago'     => number_format($pixDin + $cartao, 2, ',', '.'),
-], JSON_UNESCAPED_UNICODE);
+    'total_pix'      => $fmt($total_pix),
+    'total_dinheiro' => $fmt($total_dinheiro),
+    'total_credito'  => $fmt($total_credito),
+    'total_debito'   => $fmt($total_debito),
+    'total_pago'     => $fmt($total),
+]);

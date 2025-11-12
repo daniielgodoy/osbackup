@@ -1,27 +1,81 @@
 <?php
-// 1) Segurança & sessão primeiro (NADA de HTML antes)
-require_once __DIR__ . '/includes/auth_guard.php';
-$tenant_id = require_tenant();      // trava sessão + tenant
-$shop_id   = current_shop_id();     // pode ser null
+// index.php
+declare(strict_types=1);
 
-// 2) DB
+// 1) Segurança & sessão (NADA de HTML antes)
+require_once __DIR__ . '/includes/auth_guard.php';
 require_once __DIR__ . '/includes/mysqli.php';
+
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn->set_charset('utf8mb4');
+date_default_timezone_set('America/Sao_Paulo');
+$conn->query("SET time_zone = '-03:00'");
+
+// Garante sessão iniciada
+if (session_status() !== PHP_SESSION_ACTIVE) {
+  session_start();
+}
+
+// Contexto da sessão
+$tenant_id = require_tenant();          // sempre precisa
+$shop_id   = current_shop_id();         // pode ser null
+$user_id   = (int)($_SESSION['user_id'] ?? 0);
+$role      = $_SESSION['role'] ?? 'member';
+
+$isAdmin  = ($role === 'admin');
+$isMember = ($role === 'member');
+
+if ($user_id <= 0) {
+  header('Location: login.php');
+  exit;
+}
+
+/**
+ * WHERE base para todas as consultas:
+ * - Sempre filtra tenant
+ * - Se tiver shop_id, filtra também
+ * - Se for MEMBER:
+ *      vê TUDO que está 'pendente' (independente do responsável)
+ *      + vê apenas OS onde responsavel_id = ele
+ *   → (status='pendente' OR responsavel_id = :user_id)
+ * - Se for ADMIN:
+ *      vê tudo (dentro do tenant/shop)
+ */
+// Agora TODOS veem todas as OS da loja/tenant.
+// Nenhum filtro por usuário, apenas tenant (+ loja se selecionada).
+$whereBase = "tenant_id = ?";
+$typesBase = 'i';
+$paramsBase = [$tenant_id];
+
+if (!empty($shop_id)) {
+  $whereBase .= " AND shop_id = ?";
+  $typesBase .= 'i';
+  $paramsBase[] = $shop_id;
+}
+
+
+// Helper para bind dinâmico
+function stmt_bind(mysqli_stmt $stmt, string $types, array $params): void {
+  if ($params) {
+    $stmt->bind_param($types, ...$params);
+  }
+}
 
 // 3) Contexto da página (antes da navbar para destacar menu ativo)
 $pagina = 'painel';
 
-// 4) Agora sim pode emitir HTML
+// 4) Agora pode emitir HTML
 include_once __DIR__ . '/includes/header.php';
 ?>
 <body>
 <?php include_once __DIR__ . '/includes/navbar.php'; ?>
 
 <div class="content">
-  <div class="dashboard-header">
-    <h2>Dashboard</h2>
-  </div>
+<div class="dashboard-header">
+  <h2>Dashboard</h2>
+
+</div>
+
 
   <div class="grid-layout">
     <!-- COLUNA PRINCIPAL -->
@@ -33,29 +87,45 @@ $hoje = date('Y-m-d');
 
 /*
   Regras:
-  - 'andamento', 'pendente', 'orcamento' → contam todas as datas (mas só do tenant atual)
-  - 'aguardando' e 'concluidos' → contagem diária (hoje) por data_entrada OU atualizado_em
+
+  Base (WHERE):
+    - Sempre: tenant_id [+ shop_id se tiver]
+    - Se MEMBER: (status='pendente' OR responsavel_id = user_id)
+    - Se ADMIN: tudo do tenant[/shop]
+
+  Cards:
+    - andamento, pendente, orcamento → seguem base
+    - aguardando & concluidos → apenas se (data_entrada = hoje OU atualizado_em = hoje), respeitando base
 */
-$sql = "
+
+$sqlResumo = "
   SELECT
     SUM(status = 'em_andamento') AS andamento,
     SUM(status = 'pendente')     AS pendente,
     SUM(status = 'orcamento')    AS orcamento,
 
-    SUM( (status='aguardando_retirada')
-         AND (DATE(data_entrada) = ? OR DATE(COALESCE(atualizado_em,'0000-00-00')) = ?) ) AS aguardando,
+    SUM(
+      status = 'aguardando_retirada'
+      AND (DATE(data_entrada) = ? OR DATE(COALESCE(atualizado_em,'0000-00-00')) = ?)
+    ) AS aguardando,
 
-    SUM( (status='concluido')
-         AND (DATE(data_entrada) = ? OR DATE(COALESCE(atualizado_em,'0000-00-00')) = ?) ) AS concluidos,
+    SUM(
+      status = 'concluido'
+      AND (DATE(data_entrada) = ? OR DATE(COALESCE(atualizado_em,'0000-00-00')) = ?)
+    ) AS concluidos,
 
     COUNT(*) AS total
   FROM ordens_servico
-  WHERE tenant_id = ?
+  WHERE $whereBase
 ";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param('ssssi', $hoje, $hoje, $hoje, $hoje, $tenant_id);
+
+$types = 'ssss' . $typesBase;
+$params = [$hoje, $hoje, $hoje, $hoje, ...$paramsBase];
+
+$stmt = $conn->prepare($sqlResumo);
+stmt_bind($stmt, $types, $params);
 $stmt->execute();
-$resumo = $stmt->get_result()->fetch_assoc();
+$resumo = $stmt->get_result()->fetch_assoc() ?: [];
 $stmt->close();
 
 $andamento  = (int)($resumo['andamento']  ?? 0);
@@ -68,7 +138,7 @@ $total      = (int)($resumo['total']      ?? 0);
         <div class="card yellow" id="card-pendente">
           <h4>Pendentes</h4>
           <h2><?= $pendente ?></h2>
-          <p>Hoje</p>
+          <p><?= $isMember ? 'Compartilhados na loja' : 'Hoje' ?></p>
           <i class="fa fa-times-circle icon"></i>
         </div>
 
@@ -89,40 +159,138 @@ $total      = (int)($resumo['total']      ?? 0);
         <div class="card green" id="card-aguardando">
           <h4>Serviços</h4>
           <h2><?= $aguardando ?></h2>
-          <p>Aguardando retirada</p>
+          <p>Aguardando retirada (hoje)</p>
           <i class="fa fa-hourglass icon"></i>
         </div>
 
         <div class="card white" id="card-concluidos">
           <h4>Serviços</h4>
           <h2><?= $concluidos ?></h2>
-          <p>Concluídos</p>
+          <p>Concluídos (hoje)</p>
           <i class="fa fa-check icon"></i>
         </div>
 
       </div>
+<?php if ($isMember): ?>
 
-      <div class="charts-four full-width" id="chartsMeiosPagamento">
-        <div class="chart-box">
-          <h3>PIX — Ontem x Hoje</h3>
-          <canvas id="piePix"></canvas>
-        </div>
+<?php
+// Feed de últimas atualizações para colaboradores (apenas desta loja/tenant)
 
-        <div class="chart-box">
-          <h3>Dinheiro — Ontem x Hoje</h3>
-          <canvas id="pieDinheiroPg"></canvas>
-        </div>
+// verifica se a tabela de logs existe
+$hasLogs = false;
+if ($res = $conn->query("SHOW TABLES LIKE 'ordens_servico_logs'")) {
+    $hasLogs = $res->num_rows > 0;
+    $res->free();
+}
 
-        <div class="chart-box">
-          <h3>Crédito — Ontem x Hoje</h3>
-          <canvas id="pieCredito"></canvas>
-        </div>
+$feedRows = [];
 
-        <div class="chart-box">
-          <h3>Débito — Ontem x Hoje</h3>
-          <canvas id="pieDebito"></canvas>
-        </div>
-      </div>
+if ($hasLogs) {
+$sqlFeed = "
+  SELECT
+    l.os_id,
+    l.status_novo,
+    l.metodo_pagamento,
+    l.valor_total,
+    l.criado_em,
+    u.nome AS usuario_nome
+  FROM ordens_servico_logs l
+  LEFT JOIN login u ON u.id = l.user_id
+  WHERE l.tenant_id = ?
+    AND l.acao = 'atualizar_status'
+    AND DATE(l.criado_em) = CURDATE()
+";
+
+
+    $typesFeed  = 'i';
+    $paramsFeed = [$tenant_id];
+
+    if (!empty($shop_id)) {
+        $sqlFeed   .= " AND l.shop_id = ?";
+        $typesFeed .= 'i';
+        $paramsFeed[] = $shop_id;
+    }
+
+    $sqlFeed .= " ORDER BY l.criado_em DESC LIMIT 30";
+
+    $stmtFeed = $conn->prepare($sqlFeed);
+    stmt_bind($stmtFeed, $typesFeed, $paramsFeed);
+    $stmtFeed->execute();
+    $feed = $stmtFeed->get_result();
+
+    while ($row = $feed->fetch_assoc()) {
+        $feedRows[] = $row;
+    }
+
+    $stmtFeed->close();
+}
+
+// label bonitinho pro status
+function status_label(string $s): string {
+    $map = [
+        'pendente'            => 'Pendente',
+        'em_andamento'        => 'Em andamento',
+        'concluido'           => 'Concluído',
+        'cancelado'           => 'Cancelado',
+        'orcamento'           => 'Orçamento',
+        'aguardando_retirada' => 'Aguardando retirada',
+    ];
+    return $map[$s] ?? ucfirst(str_replace('_',' ',$s));
+}
+?>
+
+<div class="card feed-card">
+  <h4>
+    <i class="fa fa-history"></i>
+    Últimas atualizações de hoje
+  </h4>
+
+  <ul class="feed-list">
+    <?php if ($hasLogs && !empty($feedRows)): ?>
+      <?php foreach ($feedRows as $f):
+        $hora   = date('H:i', strtotime($f['criado_em']));
+        $status = status_label((string)$f['status_novo']);
+        $user   = $f['usuario_nome'] ?: 'Sistema';
+        $osId   = (int)$f['os_id'];
+      ?>
+        <li>
+          <span class="bullet"></span>
+          <div class="feed-text">
+            <?= htmlspecialchars("OS {$osId} mudou para {$status} por {$user} às {$hora}", ENT_QUOTES, 'UTF-8') ?>
+          </div>
+        </li>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <li class="feed-empty">
+        Sem movimentações hoje ainda. Assim que alguém alterar o status de uma OS, aparece aqui. 🙂
+      </li>
+    <?php endif; ?>
+  </ul>
+</div>
+
+<?php endif; // $isMember ?>
+
+<?php if ($isAdmin): ?>
+  <div class="charts-four full-width" id="chartsMeiosPagamento">
+    <div class="chart-box">
+      <h3>PIX — Ontem x Hoje</h3>
+      <canvas id="piePix"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Dinheiro — Ontem x Hoje</h3>
+      <canvas id="pieDinheiroPg"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Crédito — Ontem x Hoje</h3>
+      <canvas id="pieCredito"></canvas>
+    </div>
+      <div class="chart-box">
+      <h3>Débito — Ontem x Hoje</h3>
+      <canvas id="pieDebito"></canvas>
+    </div>
+  </div>
+<?php endif; ?>
+
     </div>
 
     <!-- COLUNA LATERAL -->
@@ -132,21 +300,26 @@ $total      = (int)($resumo['total']      ?? 0);
           <h3>
             <i class="fa fa-wrench icon"></i> Serviços Diários —
 <?php
-$hoje = date('Y-m-d');
-$stmtCnt = $conn->prepare("
+// Contador lateral com mesmo filtro base
+$sqlCnt = "
   SELECT COUNT(*) AS total
   FROM ordens_servico
-  WHERE tenant_id = ?
+  WHERE $whereBase
     AND (
-      status IN ('em_andamento','orcamento','pendente')       -- ativos (todas as datas)
-      OR DATE(data_entrada) = ?                                -- demais, só hoje
+      status IN ('em_andamento','orcamento','pendente')   -- ativos (todas as datas)
+      OR DATE(data_entrada) = ?                           -- demais, só hoje
       OR DATE(COALESCE(atualizado_em,'0000-00-00')) = ?
     )
-");
-$stmtCnt->bind_param('iss', $tenant_id, $hoje, $hoje);
+";
+$typesCnt = $typesBase . 'ss';
+$paramsCnt = [...$paramsBase, $hoje, $hoje];
+
+$stmtCnt = $conn->prepare($sqlCnt);
+stmt_bind($stmtCnt, $typesCnt, $paramsCnt);
 $stmtCnt->execute();
-$rowCnt = $stmtCnt->get_result()->fetch_assoc();
+$rowCnt = $stmtCnt->get_result()->fetch_assoc() ?: [];
 $stmtCnt->close();
+
 $qtdHoje = (int)($rowCnt['total'] ?? 0);
 echo "<span class='contador-diario'>{$qtdHoje}</span>";
 ?>
@@ -158,7 +331,8 @@ echo "<span class='contador-diario'>{$qtdHoje}</span>";
 
         <div id="servicos" class="servicos-scroll">
 <?php
-$stmt = $conn->prepare("
+// Lista lateral: aplica base + mesmas regras de datas
+$sqlLista = "
   SELECT
     id, nome, modelo, servico, status,
     metodo_pagamento,
@@ -166,38 +340,43 @@ $stmt = $conn->prepare("
     valor_cartao,
     valor_total
   FROM ordens_servico
-  WHERE tenant_id = ?
+  WHERE $whereBase
     AND (
-      status IN ('em_andamento','orcamento','pendente')     -- sempre entram
-      OR DATE(data_entrada) = ?                             -- demais status, só hoje
+      status IN ('em_andamento','orcamento','pendente')   -- sempre entram
+      OR DATE(data_entrada) = ?                           -- demais só hoje
       OR DATE(COALESCE(atualizado_em,'0000-00-00')) = ?
     )
   ORDER BY
-    (DATE(COALESCE(atualizado_em,'0000-00-00')) = ?) DESC,  -- prioriza atualizados hoje
+    (DATE(COALESCE(atualizado_em,'0000-00-00')) = ?) DESC,
     COALESCE(atualizado_em, data_entrada) DESC,
     id DESC
-");
-$stmt->bind_param('isss', $tenant_id, $hoje, $hoje, $hoje);
+";
+
+$typesLista = $typesBase . 'sss';
+$paramsLista = [...$paramsBase, $hoje, $hoje, $hoje];
+
+$stmt = $conn->prepare($sqlLista);
+stmt_bind($stmt, $typesLista, $paramsLista);
 $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result && $result->num_rows > 0) {
-  echo '<div class="servicos-header-list">';
-  echo '  <span class="col-id">OS</span>';
-  echo '  <span class="col-nome">Nome</span>';
-  echo '  <span class="col-modelo">Modelo</span>';
-  echo '  <span class="col-servico">Serviço</span>';
-  echo '  <span class="col-status">Status</span>';
-  echo '</div>';
+echo '<div class="servicos-header-list">';
+echo '  <span class="col-id">OS</span>';
+echo '  <span class="col-nome">Nome</span>';
+echo '  <span class="col-modelo">Modelo</span>';
+echo '  <span class="col-servico">Serviço</span>';
+echo '  <span class="col-status">Status</span>';
+echo '  <span class="col-acoes">Imp.</span>';
+echo '</div>';
+
 
   echo '<ul class="lista-servicos">';
   while ($row = $result->fetch_assoc()) {
-
     $valDin = (float)($row['valor_dinheiro_pix'] ?? 0);
     $valCar = (float)($row['valor_cartao'] ?? 0);
     $valTot = (float)($row['valor_total'] ?? 0);
 
-    // 💰 Exibição automática
     if ($valDin > 0 && $valCar == 0) {
       $valorTotal = $valDin;
     } elseif ($valCar > 0 && $valDin == 0) {
@@ -219,34 +398,38 @@ if ($result && $result->num_rows > 0) {
       default:                     $classeStatus = 'status-desconhecido';
     }
 
-    echo '<li class="' . $classeStatus . '" 
-      data-id="' . (int)$row['id'] . '" 
-      data-valor_dinheiro_pix="' . htmlspecialchars($valDin) . '" 
-      data-valor_cartao="' . htmlspecialchars($valCar) . '">';
+echo '<li class="' . $classeStatus . '" 
+  data-id="' . (int)$row['id'] . '" 
+  data-valor_dinheiro_pix="' . htmlspecialchars((string)$valDin, ENT_QUOTES, 'UTF-8') . '" 
+  data-valor_cartao="' . htmlspecialchars((string)$valCar, ENT_QUOTES, 'UTF-8') . '">';
 
-    echo '  <span class="os-id">' . (int)$row['id'] . '</span>';
-    echo '  <span class="os-nome">' . htmlspecialchars($row['nome'] ?? '') . '</span>';
-    echo '  <span class="os-modelo">' . htmlspecialchars($row['modelo'] ?? '') . '</span>';
-    echo '  <span class="os-servico">' . htmlspecialchars($row['servico'] ?? '') . '</span>';
+echo '  <span class="os-id">' . (int)$row['id'] . '</span>';
+echo '  <span class="os-nome">' . htmlspecialchars($row['nome'] ?? '', ENT_QUOTES, 'UTF-8') . '</span>';
+echo '  <span class="os-modelo">' . htmlspecialchars($row['modelo'] ?? '', ENT_QUOTES, 'UTF-8') . '</span>';
+echo '  <span class="os-servico">' . htmlspecialchars($row['servico'] ?? '', ENT_QUOTES, 'UTF-8') . '</span>';
 
-    $valorFmt = 'R$ ' . number_format($valorTotal, 2, ',', '.');
+echo '  <select class="status-select" data-id="' . (int)$row['id'] . '">';
+$statuses = [
+  'pendente'             => 'Pendente',
+  'em_andamento'         => 'Em andamento',
+  'concluido'            => 'Concluído',
+  'cancelado'            => 'Cancelado',
+  'orcamento'            => 'Orçamento',
+  'aguardando_retirada'  => 'Aguardando retirada'
+];
+foreach ($statuses as $key => $label) {
+  $selected = ($statusAtual === $key) ? 'selected' : '';
+  echo "<option value=\"{$key}\" {$selected}>{$label}</option>";
+}
+echo '  </select>';
 
-    echo '  <select class="status-select" data-id="' . (int)$row['id'] . '">';
-    $statuses = [
-      'pendente'             => 'Pendente',
-      'em_andamento'         => 'Em andamento',
-      'concluido'            => 'Concluído',
-      'cancelado'            => 'Cancelado',
-      'orcamento'            => 'Orçamento',
-      'aguardando_retirada'  => 'Aguardando retirada'
-    ];
-    foreach ($statuses as $key => $label) {
-      $selected = ($statusAtual === $key) ? 'selected' : '';
-      echo "<option value='$key' $selected>$label</option>";
-    }
-    echo '  </select>';
+// 🔹 Botão de impressão ao lado da OS
+echo '  <button type="button" class="os-print-btn" title="Imprimir OS">';
+echo '    <i class="fa fa-print"></i>';
+echo '  </button>';
 
-    echo '</li>';
+echo '</li>';
+
   }
   echo '</ul>';
 } else {
@@ -257,33 +440,38 @@ $stmt->close();
         </div>
       </div>
 
-      <div class="card financeiro" id="resumoFinanceiro">
-        <h4><i class="fa fa-wallet"></i> Resumo Financeiro (Diário)</h4>
-        <h2 id="totalPago">R$ 0,00</h2>
-        <div class="sub-valores">
-          <div class="campo">
-            <span class="label"><i class="fa-brands fa-pix"></i> PIX</span>
-            <span id="valorPix">R$ 0,00</span>
-          </div>
-          <div class="campo">
-            <span class="label">💵 Dinheiro</span>
-            <span id="valorDinheiro">R$ 0,00</span>
-          </div>
-          <div class="campo">
-            <span class="label">💳 Crédito</span>
-            <span id="valorCredito">R$ 0,00</span>
-          </div>
-          <div class="campo">
-            <span class="label">💳 Débito</span>
-            <span id="valorDebito">R$ 0,00</span>
-          </div>
-        </div>
+<?php if ($isAdmin): ?>
+  <div class="card financeiro" id="resumoFinanceiro">
+    <h4><i class="fa fa-wallet"></i>
+      Resumo Financeiro (Diário)
+    </h4>
+    <h2 id="totalPago">R$ 0,00</h2>
+    <div class="sub-valores">
+      <div class="campo">
+        <span class="label"><i class="fa-brands fa-pix"></i> PIX</span>
+        <span id="valorPix">R$ 0,00</span>
       </div>
+      <div class="campo">
+        <span class="label">💵 Dinheiro</span>
+        <span id="valorDinheiro">R$ 0,00</span>
+      </div>
+      <div class="campo">
+        <span class="label">💳 Crédito</span>
+        <span id="valorCredito">R$ 0,00</span>
+      </div>
+      <div class="campo">
+        <span class="label">💳 Débito</span>
+        <span id="valorDebito">R$ 0,00</span>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
+
     </div>
 
   </div>
 
-  <!-- MODAL ORDEM DE SERVIÇO -->
+  <!-- MODAL ORDEM DE SERVIÇO (mantido, mas salvar_os.php deve setar responsavel_id = $user_id) -->
   <div id="modalAddServico" class="modal">
     <div class="modal-content">
       <span class="close-btn" id="closeModal">&times;</span>
@@ -296,8 +484,10 @@ $stmt->close();
       </div>
 
       <form id="formAddServico" method="POST" action="includes/salvar_os.php">
-        <!-- (NOVO) id do cliente selecionado pelo autocomplete -->
         <input type="hidden" name="client_id" id="client_id">
+        <!-- (todo o formulário igual ao seu atual, não alterei campos) -->
+        <!-- ... [mantido exatamente como você já tem acima] ... -->
+
 
         <div class="form-row">
           <!-- NOME com autocomplete -->
@@ -473,6 +663,7 @@ function definirMetodoPagamento() {
   </div>
 
 <script>
+  const IS_ADMIN = <?= $isAdmin ? 'true' : 'false' ?>;
   // Permite ativar apenas um checkbox
   const pagamentoCheckboxes = document.querySelectorAll('input[name="pagamento"]');
   pagamentoCheckboxes.forEach(chk => {
@@ -798,6 +989,63 @@ const close = () => {
       }
     });
   });
+function atualizarFeed() {
+  const ul = document.querySelector('.feed-card .feed-list');
+  if (!ul) return;
+
+  fetch('includes/atualizar_feed.php', {
+    cache: 'no-store',
+    headers: { 'X-Requested-With': 'fetch' }
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data || !data.ok || typeof data.html !== 'string') return;
+      const novo = data.html.trim();
+      const atual = ul.innerHTML.trim();
+      if (novo && novo !== atual) {
+        ul.innerHTML = novo;
+      }
+    })
+    .catch(err => console.error('Erro ao atualizar feed:', err));
+}
+
+function atualizarLateral() {
+  fetch('includes/atualizar_lateral.php', {
+    cache: 'no-store',
+    headers: { 'X-Requested-With': 'fetch' }
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data || !data.ok) return;
+
+      // Atualiza contador "Serviços Diários — X"
+      if (typeof data.contador !== 'undefined') {
+        const span = document.querySelector('.contador-diario');
+        if (span && span.textContent != String(data.contador)) {
+          span.textContent = data.contador;
+          span.classList.add('flash');
+          setTimeout(() => span.classList.remove('flash'), 400);
+        }
+      }
+
+      // Atualiza a lista da lateral
+      if (typeof data.html === 'string') {
+        const wrap = document.getElementById('servicos');
+        if (wrap) {
+          const old = wrap.innerHTML.trim();
+          const next = data.html.trim();
+
+          // só troca se realmente mudou, pra não perder seleção à toa
+          if (old !== next) {
+            wrap.innerHTML = next;
+          }
+        }
+      }
+    })
+    .catch(err => {
+      console.error('Erro ao atualizar lateral:', err);
+    });
+}
 
   function atualizarCards() {
     fetch('includes/atualizar_cards.php')
@@ -829,6 +1077,7 @@ const close = () => {
   });
 
   function atualizarFinanceiro() {
+    if (!IS_ADMIN) return;
     fetch('includes/atualizar_financeiro.php')
       .then(res => res.json())
       .then(data => {
@@ -861,13 +1110,22 @@ const close = () => {
       .catch(err => console.error('Erro ao atualizar financeiro:', err));
   }
 
-  setInterval(() => {
-    atualizarCards();
-    atualizarFinanceiro();
-  }, 30000);
+setInterval(() => {
+  atualizarCards();
+  atualizarLateral();
+  atualizarFeed();          // <-- adiciona aqui
+  if (IS_ADMIN) atualizarFinanceiro();
+}, 30000);
 
-  window.addEventListener('load', atualizarFinanceiro);
 
+window.addEventListener('load', () => {
+  atualizarLateral();
+  atualizarFeed();          // <-- adiciona aqui
+  if (IS_ADMIN) atualizarFinanceiro();
+});
+
+
+<?php if ($isAdmin): ?>
   // =============== GRÁFICOS: HOJE x ONTEM por meio de pagamento (ROSQUINHA) ===============
   (function(){
     if (window.__charts4PagamentosInit) return;
@@ -1054,7 +1312,7 @@ const close = () => {
     const __themeObs = new MutationObserver(() => ensureChart(drawAll));
     __themeObs.observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
   })();
-
+<?php endif; ?>
   /* ========= LISTENER DELEGADO ÚNICO PARA .status-select ========= */
   (function bindStatusSelectOnce(){
     if (window.__boundStatusSelectDashboard) return;
@@ -1110,8 +1368,15 @@ const close = () => {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({ id, status })
         });
-        if (!resp.ok) throw new Error(await resp.text());
-
+if (!resp.ok) {
+  const msg = await resp.text();
+  if (msg.includes('atribuída a outro membro') || msg.includes('foi atualizada por outro usuário')) {
+    alert(msg);
+    location.reload(); // força sincronizar com o estado real
+    return;
+  }
+  throw new Error(msg || 'Erro ao atualizar status.');
+}
         select.classList.add('flash-success');
         setTimeout(() => select.classList.remove('flash-success'), 600);
 
@@ -1131,10 +1396,12 @@ const close = () => {
           }
         }
 
-        setTimeout(() => {
-          atualizarCards();
-          atualizarFinanceiro();
-        }, 400);
+setTimeout(() => {
+  atualizarCards();
+  atualizarFeed();      // <-- aqui também
+  atualizarFinanceiro();
+}, 400);
+
       } catch (err) {
         console.error('❌ Erro ao atualizar status:', err);
         alert('Erro ao atualizar status da OS.');
@@ -1342,6 +1609,19 @@ const close = () => {
     const url = `includes/gerar_pdf_os.php?id=${id}&print=1&_=${Date.now()}`;
     window.open(url, '_blank');
   }
+// Clique no ícone de impressão da barra lateral
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.os-print-btn');
+  if (!btn) return;
+
+  const li = btn.closest('li[data-id]');
+  if (!li) return;
+
+  const id = li.getAttribute('data-id');
+  if (!id) return;
+
+  gerarEImprimirOS(id);
+});
 
   // ====== SUBMIT: verificar/criar cliente -> salvar_os via AJAX -> imprimir ======
   document.getElementById('formAddServico').addEventListener('submit', async function(e){

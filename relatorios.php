@@ -1,14 +1,15 @@
 <?php
 /* ===========================================================================
  * relatorios.php — Dashboard de relatórios (multi-tenant)
- * Requisitos externos:
- *  - includes/auth_guard.php  => require_tenant(), current_shop_id()
- *  - includes/mysqli.php      => $conn (mysqli)
- *  - includes/relatorios_data.php (endpoint de dados JSON)
- *  - css/relatorios.css e theme.css (theme POR ÚLTIMO)
  * ======================================================================== */
 
 require_once __DIR__ . '/includes/auth_guard.php';
+$role = $_SESSION['role'] ?? 'member';
+if ($role !== 'admin') {
+    http_response_code(403);
+    exit('Acesso restrito ao administrador.');
+}
+
 $tenant_id = require_tenant();
 $shop_id   = current_shop_id(); // pode ser null
 
@@ -19,6 +20,34 @@ $conn->set_charset('utf8mb4');
 /* Datas padrão: últimos 7 dias */
 $hoje       = date('Y-m-d');
 $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
+
+/* ===== Lista de funcionários (para filtro) ===== */
+$funcionarios = [];
+try {
+    $sqlFunc = "SELECT id, nome FROM login WHERE tenant_id = ? AND (ativo = 1 OR ativo IS NULL)";
+    $types = 'i';
+    $params = [$tenant_id];
+
+    $hasShopCol = false;
+    $resCols = $conn->query("SHOW COLUMNS FROM login LIKE 'shop_id'");
+    if ($resCols && $resCols->num_rows > 0) $hasShopCol = true;
+
+    if (!empty($shop_id) && $hasShopCol) {
+        $sqlFunc .= " AND (shop_id = ? OR shop_id IS NULL OR shop_id = 0)";
+        $types   .= 'i';
+        $params[] = $shop_id;
+    }
+
+    $sqlFunc .= " ORDER BY nome ASC";
+    $stmtF = $conn->prepare($sqlFunc);
+    if (!empty($params)) $stmtF->bind_param($types, ...$params);
+    $stmtF->execute();
+    $resF = $stmtF->get_result();
+    while ($row = $resF->fetch_assoc()) $funcionarios[] = $row;
+    $stmtF->close();
+} catch (Throwable $e) {
+    $funcionarios = [];
+}
 ?>
 <?php include_once __DIR__ . '/includes/header.php'; ?>
 <body>
@@ -77,7 +106,7 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
     </div>
   </div>
 
-  <!-- FILTROS AVANÇADOS (colapsável) -->
+  <!-- FILTROS AVANÇADOS -->
   <div id="filtrosAvancados" class="filters-advanced collapsed">
     <div class="grid">
       <div class="field">
@@ -142,77 +171,69 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
           <input type="number" id="vMax" placeholder="R$ máx." step="0.01">
         </div>
       </div>
+
+      <!-- Filtro Funcionários (chips no canto, alinhado com o título via CSS da página) -->
+      <?php if (!empty($funcionarios)): ?>
+      <div class="field two">
+        <label>Funcionários</label>
+        <div class="chip-group" id="chipFuncs">
+          <?php foreach ($funcionarios as $f): ?>
+            <button class="chip" data-id="<?= (int)$f['id'] ?>">
+              <i class="fa-solid fa-user"></i>
+              <span><?= htmlspecialchars($f['nome'] ?: 'Sem nome', ENT_QUOTES, 'UTF-8') ?></span>
+            </button>
+          <?php endforeach; ?>
+          <button class="chip chip-clear" id="chipFuncsClear" title="Limpar">Limpar</button>
+        </div>
+        <small class="hint">Filtra e gera estatísticas por responsável (quando informado nas O.S.).</small>
+      </div>
+      <?php endif; ?>
     </div>
   </div>
 </header>
 
-  <!-- TILES (SELETOR DE VIEWS) -->
+  <!-- TILES -->
   <section class="report-tiles" id="reportTiles">
     <button class="tile active" data-view="geral">
-      <i class="fa-solid fa-gauge"></i>
-      <span>Visão Geral</span>
+      <i class="fa-solid fa-gauge"></i><span>Visão Geral</span>
     </button>
     <button class="tile" data-view="faturamento">
-      <i class="fa-solid fa-chart-line"></i>
-      <span>Faturamento</span>
+      <i class="fa-solid fa-chart-line"></i><span>Faturamento</span>
     </button>
     <button class="tile" data-view="meios">
-      <i class="fa-solid fa-chart-pie"></i>
-      <span>Meios de pagamento</span>
+      <i class="fa-solid fa-chart-pie"></i><span>Meios de pagamento</span>
     </button>
     <button class="tile" data-view="topserv">
-      <i class="fa-solid fa-ranking-star"></i>
-      <span>Top serviços</span>
+      <i class="fa-solid fa-ranking-star"></i><span>Top serviços</span>
     </button>
     <button class="tile" data-view="status">
-      <i class="fa-solid fa-clipboard-list"></i>
-      <span>OS por status</span>
+      <i class="fa-solid fa-clipboard-list"></i><span>OS por status</span>
+    </button>
+    <button class="tile" data-view="funcionarios">
+      <i class="fa-solid fa-users"></i><span>Funcionários</span>
     </button>
   </section>
 
   <!-- VIEW: VISÃO GERAL -->
   <div class="view" data-view="geral">
-    <!-- KPIs -->
     <section class="kpis">
-      <div class="kpi-card">
-        <span class="kpi-label">OS criadas</span>
-        <span id="kpiCriadas" class="kpi-value">0</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">OS concluídas</span>
-        <span id="kpiConcluidas" class="kpi-value">0</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">Faturamento (período)</span>
-        <span id="kpiFaturamento" class="kpi-value">R$ 0,00</span>
-      </div>
-      <div class="kpi-card">
-        <span class="kpi-label">Ticket médio</span>
-        <span id="kpiTicket" class="kpi-value">R$ 0,00</span>
-      </div>
+      <div class="kpi-card"><span class="kpi-label">OS criadas</span><span id="kpiCriadas" class="kpi-value">0</span></div>
+      <div class="kpi-card"><span class="kpi-label">OS concluídas</span><span id="kpiConcluidas" class="kpi-value">0</span></div>
+      <div class="kpi-card"><span class="kpi-label">Faturamento (período)</span><span id="kpiFaturamento" class="kpi-value">R$ 0,00</span></div>
+      <div class="kpi-card"><span class="kpi-label">Ticket médio</span><span id="kpiTicket" class="kpi-value">R$ 0,00</span></div>
     </section>
 
-    <!-- CHARTS -->
     <section class="charts">
-      <div class="chart-box">
-        <h3>Evolução diária • Faturamento</h3>
-        <canvas id="lineFaturamento"></canvas>
-      </div>
-      <div class="chart-box">
-        <h3>Meios de pagamento (somatório)</h3>
-        <canvas id="pieMeios"></canvas>
-      </div>
+      <div class="chart-box"><h3>Evolução diária • Faturamento</h3><canvas id="lineFaturamento"></canvas></div>
+      <div class="chart-box"><h3>Meios de pagamento (somatório)</h3><canvas id="pieMeios"></canvas></div>
     </section>
 
-    <!-- TOP SERVIÇOS + TOP CLIENTES -->
     <section class="tables two-col">
       <div class="tbl-wrap">
         <div class="tbl-head"><h3>Top serviços (por quantidade)</h3></div>
         <table class="tbl">
           <thead><tr><th>Serviço</th><th>Quantidade</th><th>Faturado</th></tr></thead>
-          <tbody id="tbTopServicos">
-            <tr><td colspan="3" class="vazio">Carregando…</td></tr>
-          </tbody>
+          <tbody id="tbTopServicos"><tr><td colspan="3" class="vazio">Carregando…</td></tr></tbody>
         </table>
       </div>
 
@@ -220,35 +241,21 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
         <div class="tbl-head"><h3>Top clientes (por faturamento)</h3></div>
         <table class="tbl">
           <thead><tr><th>Cliente</th><th>OS</th><th>Faturado</th></tr></thead>
-          <tbody id="tbTopClientes">
-            <tr><td colspan="3" class="vazio">Carregando…</td></tr>
-          </tbody>
+          <tbody id="tbTopClientes"><tr><td colspan="3" class="vazio">Carregando…</td></tr></tbody>
         </table>
       </div>
     </section>
 
-    <!-- RESUMO DIÁRIO (para CSV) -->
     <section class="tables">
       <div class="tbl-wrap">
         <div class="tbl-head"><h3>Resumo diário</h3></div>
         <table class="tbl">
           <thead>
             <tr>
-              <th>Período</th>
-              <th>Criadas</th>
-              <th>Concluídas</th>
-              <th>Dinheiro</th>
-              <th>Pix</th>
-              <th>Crédito</th>
-              <th>Débito</th>
-              <th>Faturado</th>
-              <th>Ticket</th>
-              <th>Tempo (h)</th>
+              <th>Período</th><th>Criadas</th><th>Concluídas</th><th>Dinheiro</th><th>Pix</th><th>Crédito</th><th>Débito</th><th>Faturado</th><th>Ticket</th><th>Tempo (h)</th>
             </tr>
           </thead>
-          <tbody id="tbResumoDiario">
-            <tr><td colspan="10" class="vazio">Carregando…</td></tr>
-          </tbody>
+          <tbody id="tbResumoDiario"><tr><td colspan="10" class="vazio">Carregando…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -261,7 +268,6 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
         <h3>Evolução diária • Faturamento (comparativo opcional)</h3>
         <canvas id="lineFaturamento_only"></canvas>
       </div>
-
       <div class="chart-box" style="grid-column:1/-1; min-height:380px">
         <h3>Faturamento por método (empilhado)</h3>
         <canvas id="stackedMetodo"></canvas>
@@ -286,9 +292,7 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
         <div class="tbl-head"><h3>Top serviços (por quantidade)</h3></div>
         <table class="tbl">
           <thead><tr><th>Serviço</th><th>Quantidade</th><th>Faturado</th></tr></thead>
-          <tbody id="tbTopServicos_only">
-            <tr><td colspan="3" class="vazio">Carregando…</td></tr>
-          </tbody>
+          <tbody id="tbTopServicos_only"><tr><td colspan="3" class="vazio">Carregando…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -304,10 +308,57 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
     </section>
   </div>
 
+  <!-- VIEW: FUNCIONÁRIOS (corrigida) -->
+  <div class="view hidden" data-view="funcionarios">
+    <section class="kpis kpis-func">
+      <div class="kpi-card">
+        <span class="kpi-label">Funcionários ativos no período</span>
+        <span id="kpiFuncQtd" class="kpi-value">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Mais OS (responsável)</span>
+        <span id="kpiFuncMaisOS" class="kpi-value-mini">—</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Maior faturamento</span>
+        <span id="kpiFuncMaisFat" class="kpi-value-mini">—</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Melhor ticket médio</span>
+        <span id="kpiFuncMelhorTicket" class="kpi-value-mini">—</span>
+      </div>
+    </section>
+
+    <section class="tables two-col">
+      <div class="tbl-wrap">
+        <div class="tbl-head"><h3>Mais OS por funcionário</h3></div>
+        <table class="tbl">
+          <thead><tr><th>Funcionário</th><th>OS</th><th>Faturado</th><th>Ticket médio</th></tr></thead>
+          <tbody id="tbFuncMaisOS"><tr><td colspan="4" class="vazio">Sem dados.</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="tbl-wrap">
+        <div class="tbl-head"><h3>Ticket médio por funcionário</h3></div>
+        <table class="tbl">
+          <thead><tr><th>Funcionário</th><th>OS</th><th>Faturado</th><th>Ticket médio</th></tr></thead>
+          <tbody id="tbFuncTicket"><tr><td colspan="4" class="vazio">Sem dados.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-box" style="grid-column:1/-1; min-height:360px">
+        <h3>OS por status (por funcionário)</h3>
+        <canvas id="barFuncStatus"></canvas>
+      </div>
+    </section>
+  </div>
+
 </div>
 
 <script>
-/* ====== Tiles (seletor de views) ====== */
+/* ====== Tiles ====== */
 (function tiles(){
   const cont = document.getElementById('reportTiles');
   function setView(name){
@@ -325,14 +376,13 @@ $iniDefault = date('Y-m-d', strtotime('-6 days', strtotime($hoje)));
   });
 })();
 
-/* ====== Chart.js loader ====== */
+/* ====== Chart.js ====== */
 function loadScript(src){return new Promise(r=>{const s=document.createElement('script');s.src=src;s.onload=r;document.head.appendChild(s);});}
 async function ensureChart(){ if(!window.Chart){ await loadScript('https://cdn.jsdelivr.net/npm/chart.js'); } }
 
 /* ====== Helpers ====== */
 const fmtBR = (n)=> Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const byId  = (s)=> document.getElementById(s);
-/* CSS var helper (usada nos gráficos) */
 function cssVar(name){
   const page = document.querySelector('.relatorios-page');
   const fromPage = page ? getComputedStyle(page).getPropertyValue(name).trim() : '';
@@ -340,11 +390,11 @@ function cssVar(name){
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || name;
 }
 
-/* ====== Refs dos charts ====== */
-const CH = { line:null, pie:null, lineOnly:null, pieOnly:null, barStatus:null, stacked:null };
+/* ====== Chart refs ====== */
+const CH = { line:null, pie:null, lineOnly:null, pieOnly:null, barStatus:null, stacked:null, barFuncStatus:null };
 function destroyIf(c){ try{ c && c.destroy && c.destroy(); }catch(_){ } }
 
-/* ====== Desenho dos componentes ====== */
+/* ====== Draw base ====== */
 function drawKPIs(d){
   byId('kpiCriadas').textContent     = d?.kpis?.os_criadas ?? 0;
   byId('kpiConcluidas').textContent  = d?.kpis?.os_concluidas ?? 0;
@@ -352,67 +402,95 @@ function drawKPIs(d){
   byId('kpiTicket').textContent      = fmtBR(d?.kpis?.ticket_medio ?? 0);
 }
 
-function drawLine(canvasId, labels, values){
-  const el = byId(canvasId); if (!el) return null;
-  const ctx = el.getContext('2d');
-  return new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{ label:'Faturamento', data: values, tension:.25, fill:false }] },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      interaction:{ mode:'index', intersect:false },
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: (c)=> fmtBR(c.parsed.y) } } },
-      scales:{ y: { ticks:{ callback:(v)=> fmtBR(v) } } }
-    }
+/* ==== FUNC: KPIs de funcionários (usando func_mais_os + func_ticket) ==== */
+function drawFuncKPIs(d){
+  const maisOSArr   = Array.isArray(d?.func_mais_os) ? d.func_mais_os : [];
+  const ticketArr   = Array.isArray(d?.func_ticket)  ? d.func_ticket  : [];
+  const idsAtivos   = new Set([
+    ...maisOSArr.map(x=>x.id).filter(Boolean),
+    ...ticketArr.map(x=>x.id).filter(Boolean)
+  ]);
+  byId('kpiFuncQtd').textContent = idsAtivos.size || 0;
+
+  // Computa melhores
+  const maisOS = maisOSArr.slice().sort((a,b)=>(b.os||0)-(a.os||0))[0] || null;
+  const maisFat = ticketArr.slice().sort((a,b)=>(b.faturado||0)-(a.faturado||0))[0] || null;
+  const melhorTicket = ticketArr.slice().sort((a,b)=>(b.ticket||0)-(a.ticket||0))[0] || null;
+
+  byId('kpiFuncMaisOS').textContent =
+    maisOS ? ((maisOS.nome||'—') + ' (' + (maisOS.os||0) + ' OS)') : '—';
+  byId('kpiFuncMaisFat').textContent =
+    maisFat ? ((maisFat.nome||'—') + ' (' + fmtBR(maisFat.faturado||0) + ')') : '—';
+  byId('kpiFuncMelhorTicket').textContent =
+    melhorTicket ? ((melhorTicket.nome||'—') + ' (' + fmtBR(melhorTicket.ticket||0) + ')') : '—';
+}
+
+/* ==== linhas, pizza, barras ==== */
+function drawLine(id, labels, values){
+  const el = byId(id); if (!el) return null;
+  return new Chart(el.getContext('2d'), {
+    type:'line',
+    data:{ labels, datasets:[{ label:'Faturamento', data: values, tension:.25, fill:false }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=> fmtBR(c.parsed.y) } } }, interaction:{ mode:'index', intersect:false }, scales:{ y:{ ticks:{ callback:(v)=> fmtBR(v) } } } }
+  });
+}
+function drawPie(id, labels, values){
+  const el = byId(id); if (!el) return null;
+  const colors = [cssVar('--donut-dinheiro'),cssVar('--donut-pix'),cssVar('--donut-credito'),cssVar('--donut-debito')];
+  return new Chart(el.getContext('2d'), {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderWidth:0 }] },
+    options:{ cutout:'68%', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label:(c)=> `${c.label}: ${fmtBR(c.parsed)}` } } } }
+  });
+}
+function drawBar(id, labels, values){
+  const el = byId(id); if (!el) return null;
+  return new Chart(el.getContext('2d'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'OS', data: values }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, precision:0 } } }
   });
 }
 
-function drawPie(canvasId, labels, values){
-  const el = document.getElementById(canvasId); if (!el) return null;
-  const ctx = el.getContext('2d');
-  const colors = [
-    cssVar('--donut-dinheiro'),
-    cssVar('--donut-pix'),
-    cssVar('--donut-credito'),
-    cssVar('--donut-debito')
-  ];
-  return new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets:[{ data: values, backgroundColor: colors, borderWidth: 0 }] },
-    options: {
-      cutout: '68%',
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position: 'bottom' }, tooltip:{ callbacks:{ label:(c)=> `${c.label}: ${fmtBR(c.parsed)}` } } }
-    }
-  });
-}
-
-function drawBar(canvasId, labels, values){
+/* ==== barras empilhadas por funcionário / status (transformando o formato do endpoint) ==== */
+function drawBarFuncStatus(canvasId, d){
   const el = byId(canvasId); if (!el) return null;
-  const ctx = el.getContext('2d');
-  return new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets:[{ label:'OS', data: values }] },
+  const labelsStatus = Array.isArray(d?.func_status?.labels) ? d.func_status.labels : [];
+  const seriesFunc   = Array.isArray(d?.func_status?.series) ? d.func_status.series : [];
+  if (!labelsStatus.length || !seriesFunc.length) return null;
+
+  // Labels do eixo X = nomes dos funcionários (na ordem recebida)
+  const labelsFuncs = seriesFunc.map(s => s.nome || ('#'+(s.id||'')));
+
+  // Construir datasets por STATUS (um dataset por status, dados por funcionário)
+  const datasets = labelsStatus.map((statusLabel, sIdx) => ({
+    label: statusLabel.replace('_',' '),
+    data: seriesFunc.map(funcSerie => Number(funcSerie.data?.[sIdx] || 0)),
+    stack: 'st'
+  }));
+
+  return new Chart(el.getContext('2d'), {
+    type:'bar',
+    data:{ labels: labelsFuncs, datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{ y:{ beginAtZero:true, precision:0 } }
+      plugins:{ legend:{ position:'bottom' } },
+      scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } } }
     }
   });
 }
 
 function drawStacked(canvasId, labels, series){
   const el = byId(canvasId); if (!el) return null;
-  const ctx = el.getContext('2d');
-  return new Chart(ctx, {
+  return new Chart(el.getContext('2d'), {
     type:'bar',
     data:{
       labels,
-      datasets: [
-        {label:'Dinheiro', data: series.dinheiro, stack:'m'},
-        {label:'Pix',      data: series.pix,      stack:'m'},
-        {label:'Crédito',  data: series.credito,  stack:'m'},
-        {label:'Débito',   data: series.debito,   stack:'m'},
+      datasets:[
+        {label:'Dinheiro', data:(series.dinheiro||[]).map(Number), stack:'m'},
+        {label:'Pix',      data:(series.pix||[]).map(Number),      stack:'m'},
+        {label:'Crédito',  data:(series.credito||[]).map(Number),  stack:'m'},
+        {label:'Débito',   data:(series.debito||[]).map(Number),   stack:'m'},
       ]
     },
     options:{
@@ -422,26 +500,19 @@ function drawStacked(canvasId, labels, series){
     }
   });
 }
-
-function drawLineComparativo(canvasId, baseLabels, baseValues, prevValues){
-  const el = byId(canvasId); if(!el) return null;
-  const ctx = el.getContext('2d');
+function drawLineComparativo(id, baseLabels, baseValues, prevValues){
+  const el = byId(id); if(!el) return null;
   const ds = [{ label:'Período', data: baseValues, tension:.25, fill:false }];
-  if (Array.isArray(prevValues) && prevValues.length === baseLabels.length){
+  if (Array.isArray(prevValues) && prevValues.length === baseLabels.length)
     ds.push({ label:'Anterior', data: prevValues, tension:.25, fill:false, borderDash:[6,4] });
-  }
-  return new Chart(ctx, {
+  return new Chart(el.getContext('2d'), {
     type:'line',
     data:{ labels: baseLabels, datasets: ds },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label:(c)=> fmtBR(c.parsed.y) } } },
-      interaction:{ mode:'index', intersect:false },
-      scales:{ y:{ ticks:{ callback:(v)=> fmtBR(v) } } }
-    }
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' }, tooltip:{ callbacks:{ label:(c)=> fmtBR(c.parsed.y) } } }, interaction:{ mode:'index', intersect:false }, scales:{ y:{ ticks:{ callback:(v)=> fmtBR(v) } } } }
   });
 }
 
+/* ====== Tabelas gerais ====== */
 function drawTables(d){
   const rows = (d?.top_servicos || []);
   const make = (arr)=> arr.length
@@ -451,36 +522,89 @@ function drawTables(d){
   const el1 = byId('tbTopServicos');       if (el1) el1.innerHTML = html;
   const el2 = byId('tbTopServicos_only');  if (el2) el2.innerHTML = html;
 }
-
 function fillTopClientes(rows){
   const tbody = byId('tbTopClientes'); if (!tbody) return;
   if(!rows?.length){ tbody.innerHTML = '<tr><td colspan="3" class="vazio">Sem dados.</td></tr>'; return; }
-  tbody.innerHTML = rows.map(r=>(
-    `<tr><td>${r.nome ?? '—'}</td><td>${r.os ?? 0}</td><td>${fmtBR(r.faturado ?? 0)}</td></tr>`
-  )).join('');
+  tbody.innerHTML = rows.map(r=>(`
+    <tr><td>${r.nome ?? '—'}</td><td>${r.os ?? 0}</td><td>${fmtBR(r.faturado ?? 0)}</td></tr>
+  `)).join('');
 }
-
 function fillResumoDiario(rows){
   const tbody = byId('tbResumoDiario'); if (!tbody) return;
   if(!rows?.length){ tbody.innerHTML = '<tr><td colspan="10" class="vazio">Sem dados.</td></tr>'; return; }
-  tbody.innerHTML = rows.map(r=>(
-    `<tr>
-      <td>${r.periodo}</td>
-      <td>${r.criadas}</td>
-      <td>${r.concluidas}</td>
-      <td>${fmtBR(r.dinheiro)}</td>
-      <td>${fmtBR(r.pix)}</td>
-      <td>${fmtBR(r.credito)}</td>
-      <td>${fmtBR(r.debito)}</td>
-      <td>${fmtBR(r.faturado)}</td>
-      <td>${fmtBR(r.ticket)}</td>
-      <td>${(Number(r.tempo_h)||0).toFixed(1)}</td>
-    </tr>`
-  )).join('');
+  tbody.innerHTML = rows.map(r=>(`
+    <tr>
+      <td>${r.periodo}</td><td>${r.criadas}</td><td>${r.concluidas}</td>
+      <td>${fmtBR(r.dinheiro)}</td><td>${fmtBR(r.pix)}</td>
+      <td>${fmtBR(r.credito)}</td><td>${fmtBR(r.debito)}</td>
+      <td>${fmtBR(r.faturado)}</td><td>${fmtBR(r.ticket)}</td><td>${(Number(r.tempo_h)||0).toFixed(1)}</td>
+    </tr>`)).join('');
 }
 
-/* ====== Coleta de filtros + fetch ao endpoint (ÚNICA definição) ====== */
+/* ==== Tabelas de Funcionários (corrigidas) ==== */
+function fillFuncTables(d){
+  const maisOSArr = Array.isArray(d?.func_mais_os) ? d.func_mais_os : [];
+  const ticketArr = Array.isArray(d?.func_ticket)  ? d.func_ticket  : [];
+
+  // map por id para merge
+  const mapTicket = new Map(ticketArr.map(r=>[String(r.id), r]));
+
+  // Monta linhas “Mais OS” juntando faturado/ticket quando houver
+  const rowsMais = maisOSArr.map(r=>{
+    const t = mapTicket.get(String(r.id)) || {};
+    return {
+      nome: r.nome || t.nome || '—',
+      os:   r.os   ?? t.concluidas ?? 0,
+      faturado: Number(t.faturado || 0),
+      ticket:   Number(t.ticket   || 0),
+    };
+  });
+
+  // Se algum funcionário só aparece no ticketArr (e não no maisOS), inclui também
+  ticketArr.forEach(t=>{
+    const key = String(t.id);
+    if (!maisOSArr.find(m=>String(m.id)===key)) {
+      rowsMais.push({
+        nome: t.nome || '—',
+        os:   Number(t.concluidas || 0),
+        faturado: Number(t.faturado || 0),
+        ticket:   Number(t.ticket   || 0),
+      });
+    }
+  });
+
+  // Preenche as duas tabelas
+  const tbMais = byId('tbFuncMaisOS');
+  const tbTic  = byId('tbFuncTicket');
+
+  if (!rowsMais.length){
+    if (tbMais) tbMais.innerHTML = '<tr><td colspan="4" class="vazio">Sem dados.</td></tr>';
+    if (tbTic)  tbTic.innerHTML  = '<tr><td colspan="4" class="vazio">Sem dados.</td></tr>';
+    return;
+  }
+
+  // “Mais OS por funcionário” (ordena por OS desc)
+  const ordemMais = rowsMais.slice().sort((a,b)=>(b.os||0)-(a.os||0));
+  if (tbMais) {
+    tbMais.innerHTML = ordemMais.map(r=>`
+      <tr>
+        <td>${r.nome}</td><td>${r.os}</td><td>${fmtBR(r.faturado)}</td><td>${fmtBR(r.ticket)}</td>
+      </tr>`).join('');
+  }
+
+  // “Ticket médio por funcionário” (ordena por ticket desc)
+  const ordemTicket = rowsMais.slice().sort((a,b)=>(b.ticket||0)-(a.ticket||0));
+  if (tbTic) {
+    tbTic.innerHTML = ordemTicket.map(r=>`
+      <tr>
+        <td>${r.nome}</td><td>${r.os}</td><td>${fmtBR(r.faturado)}</td><td>${fmtBR(r.ticket)}</td>
+      </tr>`).join('');
+  }
+}
+
+/* ====== Coleta filtros + fetch ====== */
 const selStatus = new Set();
+const selFuncs  = new Set();
 
 function getSelectedMethods(){
   return Array.from(document.querySelectorAll('input[name="mtd"]:checked')).map(i=>i.value);
@@ -504,6 +628,9 @@ async function fetchData(){
   const vMin  = byId('vMin').value;             if (vMin)  p.set('vmin', vMin);
   const vMax  = byId('vMax').value;             if (vMax)  p.set('vmax', vMax);
 
+  // 🔶 CORRIGIDO: parâmetro correto para o backend é "resp"
+  if (selFuncs.size) p.set('resp', Array.from(selFuncs).join(','));
+
   const url = new URL('includes/relatorios_data.php', window.location);
   url.search = p.toString();
 
@@ -512,7 +639,7 @@ async function fetchData(){
   return r.json();
 }
 
-/* ====== Ciclo principal de desenho ====== */
+/* ====== Ciclo principal ====== */
 async function drawAll(){
   await ensureChart();
   Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#e0e0e0';
@@ -520,7 +647,7 @@ async function drawAll(){
   try{
     const data = await fetchData();
 
-    // KPIs
+    // KPIs gerais
     drawKPIs(data);
 
     // LINE principal
@@ -530,7 +657,7 @@ async function drawAll(){
     const valsBase   = l.map(x=>Number(x.total || 0));
     CH.line = drawLine('lineFaturamento', labelsBase, valsBase);
 
-    // LINE comparativo (aba faturamento)
+    // LINE comparativo
     destroyIf(CH.lineOnly);
     const prevVals = (data?.comparativo?.anterior || []).map(x=>Number(x||0));
     CH.lineOnly = drawLineComparativo('lineFaturamento_only', labelsBase, valsBase, prevVals.length ? prevVals : null);
@@ -539,10 +666,10 @@ async function drawAll(){
     destroyIf(CH.stacked);
     const st = data?.faturamento_por_metodo || {labels:[], dinheiro:[], pix:[], credito:[], debito:[]};
     CH.stacked = drawStacked('stackedMetodo', st.labels || [], {
-      dinheiro:(st.dinheiro||[]).map(Number),
-      pix:(st.pix||[]).map(Number),
-      credito:(st.credito||[]).map(Number),
-      debito:(st.debito||[]).map(Number),
+      dinheiro:(st.dinheiro||[]),
+      pix:(st.pix||[]),
+      credito:(st.credito||[]),
+      debito:(st.debito||[])
     });
 
     // PIE meios
@@ -556,10 +683,17 @@ async function drawAll(){
     const sc = data?.status_counts || [];
     CH.barStatus = drawBar('barStatus', sc.map(x=>x.status), sc.map(x=>Number(x.qtd||0)));
 
-    // TABELAS
+    // Tabelas gerais
     drawTables(data);
     fillTopClientes(data?.top_clientes);
     fillResumoDiario(data?.resumo_diario);
+
+    // FUNCIONÁRIOS (corrigido)
+    drawFuncKPIs(data);
+    fillFuncTables(data);
+
+    destroyIf(CH.barFuncStatus);
+    CH.barFuncStatus = drawBarFuncStatus('barFuncStatus', data);
 
   } catch(e){
     console.error('Erro ao desenhar relatórios:', e);
@@ -580,6 +714,20 @@ document.getElementById('chipStatus')?.addEventListener('click', (e)=>{
   else { selStatus.add(v); btn.classList.add('on'); }
 });
 
+// Chips de funcionários (param resp=)
+document.getElementById('chipFuncs')?.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.chip'); if(!btn) return;
+  if(btn.id === 'chipFuncsClear'){
+    selFuncs.clear();
+    document.querySelectorAll('#chipFuncs .chip').forEach(c=>c.classList.remove('on'));
+    return;
+  }
+  const id = btn.dataset.id;
+  if(!id) return;
+  if(selFuncs.has(id)){ selFuncs.delete(id); btn.classList.remove('on'); }
+  else { selFuncs.add(id); btn.classList.add('on'); }
+});
+
 // Presets de data
 document.querySelectorAll('[data-preset]')?.forEach(b=>{
   b.addEventListener('click', ()=>{
@@ -592,27 +740,21 @@ document.querySelectorAll('[data-preset]')?.forEach(b=>{
     if(t==='30d'){const dt=new Date(today); dt.setDate(d-29); ini=`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`; }
     if(t==='mtd'){ ini=`${y}-${pad(m+1)}-01`; }
     if(t==='ytd'){ ini=`${y}-01-01`; }
-    document.getElementById('dtIni').value = ini;
-    document.getElementById('dtFim').value = fim;
+    byId('dtIni').value = ini; byId('dtFim').value = fim;
   });
 });
 
-// Baixar PNG do canvas
+// Baixar PNG
 document.addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-dl-canvas]'); if(!btn) return;
-  const id = btn.dataset.dlCanvas;
-  const cv = document.getElementById(id); if(!cv) return;
-  const a = document.createElement('a');
-  a.href = cv.toDataURL('image/png');
-  a.download = id + '.png';
-  a.click();
+  const id = btn.dataset.dlCanvas; const cv = byId(id); if(!cv) return;
+  const a = document.createElement('a'); a.href = cv.toDataURL('image/png'); a.download = id + '.png'; a.click();
 });
 
 // Export CSV (Resumo diário)
 document.getElementById('btnCSV')?.addEventListener('click', ()=>{
   try{
-    const tbody = document.getElementById('tbResumoDiario');
-    if(!tbody) return;
+    const tbody = byId('tbResumoDiario'); if(!tbody) return;
     const header = ['Periodo','Criadas','Concluidas','Dinheiro','Pix','Credito','Debito','Faturado','Ticket','Tempo_h'];
     const rows = [header];
     tbody.querySelectorAll('tr').forEach(tr=>{
@@ -621,23 +763,17 @@ document.getElementById('btnCSV')?.addEventListener('click', ()=>{
         rows.push(tds.map(td=> td.innerText.replace(/\u00A0/g,' ').trim()));
       }
     });
-    const csv = rows.map(r=> r.map(v=>{
-      if (/[",;\n]/.test(v)) return `"${v.replace(/"/g,'""')}"`;
-      return v;
-    }).join(';')).join('\n');
-
+    const csv = rows.map(r=> r.map(v=>(/[",;\n]/.test(v))?`"${v.replace(/"/g,'""')}"`:v).join(';')).join('\n');
     const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'resumo_diario.csv';
-    a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = 'resumo_diario.csv'; a.click(); URL.revokeObjectURL(url);
   }catch(err){ console.error('CSV error', err); }
 });
 
-// Toggle "Filtros avançados" + persistência
+// Toggle filtros avançados + persistência
 (function(){
-  const panel = document.getElementById('filtrosAvancados');
-  const btn   = document.getElementById('btnToggleAvancados');
+  const panel = byId('filtrosAvancados');
+  const btn   = byId('btnToggleAvancados');
   const KEY   = 'relatorios_avancados_open';
   function setOpen(v){
     if(!panel) return;
